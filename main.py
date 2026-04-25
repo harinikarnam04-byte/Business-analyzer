@@ -7,113 +7,92 @@ import plotly.express as px
 # Initialize Groq client
 client = Groq(api_key=os.environ["GROQ_API_KEY"])
 
-# Page configuration
+# Page configuration - Using 'centered' for much better mobile response
 st.set_page_config(
     page_title="Pro Business Analyzer",
     page_icon="🚀",
-    layout="wide"
+    layout="centered"
 )
 
-# Custom CSS for professional metric cards (Fixed for Dark Mode - No solid white)
+# Custom CSS for dark/light mode compatibility
 st.markdown("""
     <style>
     [data-testid="stMetric"] {
         background-color: rgba(255, 255, 255, 0.05); 
-        padding: 20px; 
+        padding: 15px; 
         border-radius: 12px; 
-        box-shadow: 0 4px 6px rgba(0,0,0,0.2);
+        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
         border: 1px solid rgba(255, 255, 255, 0.1);
     }
     </style>
     """, unsafe_allow_html=True)
 
-st.title("🚀 Professional Business Idea Analyzer")
+st.title("🚀 Business Idea Analyzer")
 st.markdown("---")
 
-# Sidebar / Input Section
+# Sidebar with Form Wrap (Prevents mobile refresh issues)
 with st.sidebar:
     st.header("📋 Input Parameters")
-    idea = st.text_input("Business Concept", placeholder="e.g., Luxury Pet Spa")
-    location = st.text_input("Target Location", placeholder="e.g., Jayanagar, Bangalore")
-    budget = st.number_input("Available Capital (₹)", min_value=0, value=500000, step=50000)
+    with st.form("mobile_safe_form"):
+        idea = st.text_input("Business Concept", placeholder="e.g., Pet Spa")
+        location = st.text_input("Target Location", placeholder="e.g., Jayanagar")
+        budget = st.number_input("Available Capital (₹)", min_value=0, value=500000, step=50000)
+        
+        # Use_container_width ensures the button fits any screen size
+        analyze_btn = st.form_submit_button("Generate Reality Report", use_container_width=True)
     
-    st.info("The AI acts as a skeptical Venture Capitalist to ensure honest, high-stakes feedback.")
-    analyze_btn = st.button("Generate Reality Report", use_container_width=True)
-
-# Main Dashboard Area
-col_left, col_right = st.columns([1, 1])
-
-with col_left:
-    st.subheader("💡 Analysis Overview")
-    if not idea:
-        st.write("Enter your business idea in the sidebar to begin.")
-    else:
-        st.markdown(f"**Analyzing:** {idea}")
-        st.markdown(f"**Market:** {location}")
-
-with col_right:
-    st.subheader("📊 Standard Budget Allocation")
-    budget_df = pd.DataFrame({
-        "Category": ["Rent & Setup", "Inventory", "Marketing", "Cash Reserve", "Legal/Ops"],
-        "Percentage": [35, 25, 20, 15, 5]
-    })
-    
-    fig = px.pie(
-        budget_df, 
-        values='Percentage', 
-        names='Category', 
-        hole=0.5, 
-        color_discrete_sequence=px.colors.sequential.RdBu
-    )
-    fig.update_layout(margin=dict(t=0, b=0, l=0, r=0), height=250, paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)')
-    st.plotly_chart(fig, use_container_width=True)
+    st.info("The AI provides a brutally honest VC-style assessment.")
 
 # Logic Execution
 if analyze_btn:
     if not idea or not location or not budget:
-        st.error("Missing fields! Please provide Idea, Location, and Budget.")
+        st.error("Please fill in all details in the sidebar form.")
     else:
-        # VERIFIED INDENTATION: 4 spaces for every line inside the with block
-        with st.spinner("Crunching market data and identifying risks..."):
-            prompt = f"""
-            You are a brutal, skeptical Business Consultant and VC. 
-            Analyze: {idea} in {location} with budget ₹{budget}.
-            DO NOT be optimistic. Be critical and honest.
-            
-            Structure the response exactly as follows:
-            1. EXECUTIVE SUMMARY (Feasibility at this budget)
-            2. COMPETITION (Estimate number of similar shops in {location})
-            3. BUDGET REALITY CHECK (Is ₹{budget} truly enough for {location}?)
-            4. WHY THIS MIGHT FAIL (Specific local risks)
-            5. FINAL VERDICT (GO / CAUTION / NO-GO)
-            6. SCORE (0-100)
-            """
+        # Indentation verified: 8 spaces here
+        with st.spinner("Analyzing market risks..."):
+            prompt = f"Analyze: {idea} in {location} with budget ₹{budget}. Be a skeptical consultant. Give a numbered report with risks, competition, and a final verdict."
 
             try:
+                # API Call logic
                 response = client.chat.completions.create(
                     model="llama-3.1-8b-instant",
                     messages=[{"role": "user", "content": prompt}]
                 )
                 
-                report_content = response.choices[0].message.content
+                report_text = response.choices[0].message.content
 
+                # Results Layout
                 st.markdown("---")
                 st.header("🤖 Consultant's Final Report")
 
-                # Metrics Row
+                # Metrics stack automatically on mobile in 'centered' layout
                 m1, m2, m3 = st.columns(3)
                 with m1:
-                    st.metric("Risk Level", "Critical Assessment", delta="Honest View")
+                    st.metric("Risk Level", "Critical", delta="Honest View")
                 with m2:
-                    st.metric("Budget Status", f"₹{budget}", delta="Check Gap Analysis", delta_color="inverse")
+                    st.metric("Budget", f"₹{budget}", delta="Assessment")
                 with m3:
-                    st.metric("Market Type", "Red Ocean", help="Highly competitive area")
+                    st.metric("Market", "Red Ocean")
 
                 st.markdown("### 📝 Detailed Breakdown")
-                st.info(report_content)
+                st.info(report_text)
 
             except Exception as e:
-                st.error(f"Error communicating with AI: {e}")
+                st.error(f"Connection Error: {e}")
+
+# Default view if button hasn't been clicked yet
+else:
+    st.subheader("💡 Ready to Analyze")
+    st.write("Open the sidebar (arrow on top-left for mobile) and enter your idea.")
+    
+    # Static visual for empty state
+    dummy_df = pd.DataFrame({
+        "Task": ["Rent", "Stock", "Marketing", "Reserve"],
+        "Value": [40, 30, 20, 10]
+    })
+    fig = px.pie(dummy_df, values='Value', names='Task', hole=0.4)
+    fig.update_layout(margin=dict(t=0, b=0, l=0, r=0), height=300, paper_bgcolor='rgba(0,0,0,0)')
+    st.plotly_chart(fig, use_container_width=True)
 
 st.markdown("---")
-st.caption("Developed for MBA Business Analytics Portfolio | RVIM 2026")
+st.caption("Developed for MBA Portfolio | RVIM 2026")
