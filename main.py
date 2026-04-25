@@ -58,7 +58,7 @@ if analyze_btn:
     if not idea or not location:
         st.warning("⚠️ Please provide Concept and Location.")
     else:
-        with st.spinner("🔄 Drafting 360° Strategy & Pitch..."):
+        with st.spinner("🔄 Drafting Strategic Analysis..."):
             # PROMPT: SWOT, Time, Profit, Risks, Funding, Inspiration, 4Ps, Pitch
             prompt = f"""
             Analyze '{idea}' in '{location}'. Audience: {audience}. Experience: {exp}.
@@ -80,17 +80,15 @@ if analyze_btn:
                 )
                 report = response.choices[0].message.content
 
-                # Dashboard Metrics
+                # Dashboard Metrics (Market Type Removed)
                 st.markdown("### 📈 Venture Scorecard")
-                m1, m2, m3, m4 = st.columns(4)
+                m1, m2, m3 = st.columns(3)
                 with m1:
                     st.metric("Profit Margin", "22-30%", delta="Estimated")
                 with m2:
                     st.metric("Time to MVP", "4-5 Months", delta="Setup")
                 with m3:
                     st.metric("Success Rate", "68%", delta="High Risk")
-                with m4:
-                    st.metric("Market Type", "Micro-Economic")
 
                 st.markdown("---")
                 
@@ -103,21 +101,29 @@ if analyze_btn:
                 with col_right:
                     # MICRO-ECONOMICS PIE CHART
                     st.markdown("#### 📊 Micro-Economic Resource Split")
-                    df = pd.DataFrame({
-                        "Factor of Production": ["Labour (Team)", "Land (Rent)", "Capital (Tech)", "Marketing"],
+                    df_chart = pd.DataFrame({
+                        "Factor": ["Labour (Team)", "Land (Rent)", "Capital (Tech)", "Marketing"],
                         "Share": [25, 30, 35, 10]
                     })
-                    fig = px.pie(df, values='Share', names='Factor of Production', hole=0.5,
-                                 color_discrete_sequence=px.colors.sequential.Deep)
-                    fig.update_layout(paper_bgcolor='rgba(0,0,0,0)', font=dict(color="white"),
-                                      margin=dict(t=0,b=0,l=0,r=0), height=350)
+                    
+                    # Using a safe sequential color scale
+                    fig = px.pie(df_chart, values='Share', names='Factor', hole=0.5,
+                                 color_discrete_sequence=px.colors.sequential.Turbo)
+                    
+                    fig.update_layout(
+                        paper_bgcolor='rgba(0,0,0,0)', 
+                        font=dict(color="white"),
+                        margin=dict(t=0,b=0,l=0,r=0), 
+                        height=350,
+                        showlegend=True
+                    )
                     st.plotly_chart(fig, use_container_width=True)
                     
                     st.info(f"Targeting: {audience if audience else 'General Market'}")
                     st.success(f"Language: {lang}")
 
             except Exception as e:
-                st.error(f"Error: {e}")
+                st.error(f"Error during analysis: {e}")
 else:
     # Landing Page
     st.markdown(f"""
@@ -126,4 +132,3 @@ else:
             <p style="color: #64748b;">Ready to analyze <b>{idea if idea else 'your venture'}</b> for <b>{location if location else 'any market'}</b>.</p>
         </div>
     """, unsafe_allow_html=True)
-    
