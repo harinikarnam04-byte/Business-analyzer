@@ -46,14 +46,16 @@ with st.sidebar:
         st.session_state.page = 1
         with st.spinner("🤖 Consulting Strategy Data..."):
             prompt = f"""
-            SYSTEM: You are a professional MBA Executive Consultant. You must use PERFECT SPELLING and professional grammar. Do not mention specific markets like Sultanpete.
+            SYSTEM: You are a professional Business Advisor. Use PERFECT SPELLING and professional grammar. 
+            Do NOT include the words 'MBA Report', 'Part 1', 'Part 2', or 'Part 3' in your response. 
+            Do not mention specific markets like Sultanpete.
             
             INPUT: Idea: {idea}, Location: {location}, Target: {target}, Budget: ₹{budget}, Industry: {industry}, Stage: {stage}, Language: {lang}.
             
-            REPORT STRUCTURE:
-            PART 1 (STRATEGY): Detailed SWOT and 4Ps Marketing Mix for {target}.
-            PART 2 (GROWTH): Success Rate (%), ROI Timeline, and Funding Roadmap. List specific projected Profits and Expenses for Year 2 and Year 3.
-            PART 3 (RISK): A detailed 'Loss Recovery Plan' on how to regain market share if the business faces a loss. Finish with a 30-second Investor Pitch.
+            REPORT REQUIREMENTS:
+            1. Strategy: Detailed SWOT and 4Ps Marketing Mix for {target}.
+            2. Growth: Success Rate (%), ROI Timeline, and Funding Roadmap. List specific projected Profits and Expenses for Year 2 and Year 3.
+            3. Risk: A detailed 'Loss Recovery Plan' on how to regain market share if the business faces a loss. Finish with a 30-second Investor Pitch.
             """
             resp = client.chat.completions.create(model="llama-3.1-8b-instant", messages=[{"role": "user", "content": prompt}])
             st.session_state.report = resp.choices[0].message.content
@@ -67,9 +69,10 @@ if st.session_state.page == 1:
         c2.metric("Industry", industry)
         c3.metric("Stage", stage)
         
-        # Display Strategy Part
-        content = st.session_state.report.split("PART 2")[0]
-        st.markdown(f'<div class="report-box">{content}</div>', unsafe_allow_html=True)
+        # Display first half of the clean text
+        content = st.session_state.report
+        halfway = len(content)//2
+        st.markdown(f'<div class="report-box">{content[:halfway]}...</div>', unsafe_allow_html=True)
         st.button("Next: Financial Dashboard ➡️", on_click=lambda: st.session_state.update({"page": 2}))
     else:
         st.info("Enter details in the sidebar and click 'Analyze Venture' to begin!")
@@ -100,14 +103,10 @@ elif st.session_state.page == 2:
 elif st.session_state.page == 3:
     st.markdown("### 🏆 Step 3: Performance & Risk")
     
-    # Display the rest of the report (Growth & Risk)
-    report_text = st.session_state.report
-    if "PART 2" in report_text:
-        display_content = "PART 2" + report_text.split("PART 2")[-1]
-    else:
-        display_content = report_text
-        
-    st.markdown(f'<div class="report-box">{display_content}</div>', unsafe_allow_html=True)
+    # Display the rest of the report
+    content = st.session_state.report
+    halfway = len(content)//2
+    st.markdown(f'<div class="report-box">...{content[halfway:]}</div>', unsafe_allow_html=True)
     
     st.markdown("---")
     st.download_button(label="📄 Download Complete Report", data=st.session_state.report, file_name=f"BizVenture_Report.txt")
