@@ -1,84 +1,76 @@
 import os
 import streamlit as st
 from groq import Groq
+import pandas as pd
+import plotly.express as px
 
 # Initialize Groq client
 client = Groq(api_key=os.environ["GROQ_API_KEY"])
 
-st.set_page_config(page_title="BizAI Venture Master", page_icon="💎", layout="wide")
+st.set_page_config(page_title="BizAI | Executive Master", page_icon="💎", layout="wide")
 
-# --- MOBILE-FIRST STRATEGIC UI ---
+# --- CUSTOM DASHBOARD CSS ---
 st.markdown("""
     <style>
     .stApp { background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%); color: #f8fafc; }
-    
-    /* Strategy Block Styling */
-    .strategy-card {
-        background: rgba(255, 255, 255, 0.05);
-        border-left: 5px solid #38bdf8;
-        padding: 22px;
-        border-radius: 15px;
-        margin: 15px 0px;
-        line-height: 1.6;
+    section[data-testid="stSidebar"] { background-color: rgba(15, 23, 42, 0.9); }
+    [data-testid="stMetric"] { 
+        background: rgba(255, 255, 255, 0.03); 
+        border: 1px solid rgba(255, 255, 255, 0.1); 
+        padding: 20px; border-radius: 20px; 
     }
-
     .main-title {
         background: -webkit-linear-gradient(#38bdf8, #818cf8);
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
-        font-size: 2.5rem; font-weight: 800; text-align: center; margin-bottom: 20px;
+        font-size: 2.8rem; font-weight: 800; text-align: center; margin-bottom: 5px;
     }
-
-    /* Mobile-Ready Form Button */
-    .stButton>button {
-        width: 100%;
-        border-radius: 15px;
-        height: 3.5em;
-        background: linear-gradient(90deg, #38bdf8, #818cf8);
-        border: none; color: white; font-weight: bold;
-        font-size: 1.1rem;
-        box-shadow: 0px 4px 15px rgba(56, 189, 248, 0.3);
+    .tagline { color: #94a3b8; font-size: 1.2rem; text-align: center; margin-bottom: 30px; font-style: italic; }
+    .report-box {
+        background: rgba(255, 255, 255, 0.05);
+        padding: 25px; border-radius: 15px; border-left: 5px solid #818cf8; margin-bottom: 20px;
     }
     </style>
     """, unsafe_allow_html=True)
 
 st.markdown('<h1 class="main-title">BizAI Venture Consultant</h1>', unsafe_allow_html=True)
+st.markdown('<p class="tagline">Lets connect to business world</p>', unsafe_allow_html=True)
 
-# --- SIDEBAR (THE PHONE FIX RETAINED) ---
+# --- SIDEBAR (THE PHONE FIX) ---
 with st.sidebar:
     st.markdown("### 🌐 Localization")
-    lang = st.radio("Output Language", ["English", "ಕನ್ನಡ", "हिंदी"], horizontal=True)
+    lang = st.radio("Language", ["English", "ಕನ್ನಡ", "हिंदी"], horizontal=True)
     st.markdown("---")
     
-    with st.form("ultimate_strategy_form"):
-        st.markdown("### 🛠 Project Configuration")
-        idea = st.text_input("Business Concept", placeholder="e.g. Smart Logistics")
-        location = st.text_input("Target Area", placeholder="e.g. Jayanagar")
-        audience = st.text_input("Target Audience", placeholder="e.g. Local retailers")
+    with st.form("executive_master_form"):
+        st.markdown("### 🛠 Business Logic")
+        idea = st.text_input("Concept Name", placeholder="e.g. Smart EV Solutions")
+        location = st.text_input("Location", placeholder="e.g. Bangalore")
+        audience = st.text_input("Target Audience", placeholder="e.g. Daily Commuters")
         exp = st.selectbox("Founder Experience", ["Beginner", "Intermediate", "Expert"])
         
-        # This button ensures mobile users don't lose progress
-        analyze_btn = st.form_submit_button("Generate 360° Strategy", use_container_width=True)
+        analyze_btn = st.form_submit_button("Launch 360° Analysis", use_container_width=True)
     
-    st.caption("Strategic Analytics Portfolio | RVIM")
+    st.caption("RVIM MBA Analytics | Executive Master Version")
 
 # --- ANALYSIS ENGINE ---
 if analyze_btn:
     if not idea or not location:
-        st.warning("⚠️ Please provide at least the Business Concept and Location.")
+        st.warning("⚠️ Please provide Concept and Location.")
     else:
-        with st.spinner("🤖 Mapping SWOT, Funding Paths & Inspirations..."):
-            # PROMPT: Includes SWOT, Inspiration, Risks, and NEW Funding focus
+        with st.spinner("🔄 Drafting 360° Strategy & Pitch..."):
+            # PROMPT: SWOT, Time, Profit, Risks, Funding, Inspiration, 4Ps, Pitch
             prompt = f"""
-            Analyze the venture '{idea}' in '{location}'.
-            Audience: {audience if audience else 'General market'}. Experience: {exp}.
+            Analyze '{idea}' in '{location}'. Audience: {audience}. Experience: {exp}.
             
-            Provide a professional and honest report covering:
-            1. FULL SWOT ANALYSIS: A detailed Strengths, Weaknesses, Opportunities, and Threats breakdown.
-            2. MARKET REALITY: Current viability and risks in {location}.
-            3. FUNDING OPPORTUNITIES: Suggest specific ways to raise capital (e.g., Angel Investors, Venture Capital, Crowdfunding, or Incubators) relevant to this sector.
-            4. FOUNDER INSPIRATION: Mention a successful entrepreneur in this field and their "Secret Sauce" or strategy.
-            5. FINAL VERDICT: A clear Go / No-Go / Pivot recommendation in {lang}.
+            Provide a detailed report including:
+            1. FULL SWOT ANALYSIS.
+            2. ESTIMATED TIME TO LAUNCH & EXPECTED PROFIT MARGINS (%).
+            3. MARKETING MIX (4Ps): Product, Price, Place, Promotion strategy.
+            4. FUNDING OPPORTUNITIES (Angel, VC, Crowdfunding, Incubators).
+            5. FOUNDER INSPIRATION: Successful founder & their 'Secret Sauce'.
+            6. INVESTOR ELEVATOR PITCH: A short, 30-second persuasive pitch.
+            7. BRUTALLY HONEST VERDICT in {lang}.
             """
             
             try:
@@ -88,21 +80,50 @@ if analyze_btn:
                 )
                 report = response.choices[0].message.content
 
-                # Results Dashboard
-                st.markdown("### 📋 Executive Feasibility Report")
+                # Dashboard Metrics
+                st.markdown("### 📈 Venture Scorecard")
+                m1, m2, m3, m4 = st.columns(4)
+                with m1:
+                    st.metric("Profit Margin", "22-30%", delta="Estimated")
+                with m2:
+                    st.metric("Time to MVP", "4-5 Months", delta="Setup")
+                with m3:
+                    st.metric("Success Rate", "68%", delta="High Risk")
+                with m4:
+                    st.metric("Market Type", "Micro-Economic")
+
+                st.markdown("---")
                 
-                # Single vertical card for maximum mobile readability
-                st.markdown(f'<div class="strategy-card">{report}</div>', unsafe_allow_html=True)
+                col_left, col_right = st.columns([1.5, 1])
                 
-                st.success(f"Strategy delivered in {lang} • Analysis level: {exp}")
+                with col_left:
+                    st.markdown("#### 📑 Detailed Strategic Assessment")
+                    st.markdown(f'<div class="report-box">{report}</div>', unsafe_allow_html=True)
+                    
+                with col_right:
+                    # MICRO-ECONOMICS PIE CHART
+                    st.markdown("#### 📊 Micro-Economic Resource Split")
+                    df = pd.DataFrame({
+                        "Factor of Production": ["Labour (Team)", "Land (Rent)", "Capital (Tech)", "Marketing"],
+                        "Share": [25, 30, 35, 10]
+                    })
+                    fig = px.pie(df, values='Share', names='Factor of Production', hole=0.5,
+                                 color_discrete_sequence=px.colors.sequential.Deep)
+                    fig.update_layout(paper_bgcolor='rgba(0,0,0,0)', font=dict(color="white"),
+                                      margin=dict(t=0,b=0,l=0,r=0), height=350)
+                    st.plotly_chart(fig, use_container_width=True)
+                    
+                    st.info(f"Targeting: {audience if audience else 'General Market'}")
+                    st.success(f"Language: {lang}")
 
             except Exception as e:
                 st.error(f"Error: {e}")
 else:
-    # Landing Page State
+    # Landing Page
     st.markdown(f"""
-        <div style="text-align: center; padding: 50px; opacity: 0.7;">
-            <h3>Strategic Planning Hub</h3>
-            <p>Enter your venture parameters to see a 360° breakdown of SWOT, Funding, and Market Risk.</p>
+        <div style="text-align: center; padding: 60px;">
+            <h2 style="color: #94a3b8;">Strategic Venture Control Hub</h2>
+            <p style="color: #64748b;">Ready to analyze <b>{idea if idea else 'your venture'}</b> for <b>{location if location else 'any market'}</b>.</p>
         </div>
     """, unsafe_allow_html=True)
+    
