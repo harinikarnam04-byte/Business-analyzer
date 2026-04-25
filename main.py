@@ -14,16 +14,15 @@ st.set_page_config(
     layout="wide"
 )
 
-# Custom CSS for professional metric cards
+# Custom CSS for professional metric cards (Fixed for Dark Mode - No solid white)
 st.markdown("""
     <style>
-    .main { background-color: #f8f9fa; }
     [data-testid="stMetric"] {
-        background-color: #ffffff; 
+        background-color: rgba(255, 255, 255, 0.05); 
         padding: 20px; 
         border-radius: 12px; 
-        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-        border: 1px solid #eee;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.2);
+        border: 1px solid rgba(255, 255, 255, 0.1);
     }
     </style>
     """, unsafe_allow_html=True)
@@ -66,7 +65,7 @@ with col_right:
         hole=0.5, 
         color_discrete_sequence=px.colors.sequential.RdBu
     )
-    fig.update_layout(margin=dict(t=0, b=0, l=0, r=0), height=250)
+    fig.update_layout(margin=dict(t=0, b=0, l=0, r=0), height=250, paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)')
     st.plotly_chart(fig, use_container_width=True)
 
 # Logic Execution
@@ -74,7 +73,7 @@ if analyze_btn:
     if not idea or not location or not budget:
         st.error("Missing fields! Please provide Idea, Location, and Budget.")
     else:
-        # FIXED: The block below is now correctly indented
+        # VERIFIED INDENTATION: 4 spaces for every line inside the with block
         with st.spinner("Crunching market data and identifying risks..."):
             prompt = f"""
             You are a brutal, skeptical Business Consultant and VC. 
@@ -118,4 +117,3 @@ if analyze_btn:
 
 st.markdown("---")
 st.caption("Developed for MBA Business Analytics Portfolio | RVIM 2026")
-        
