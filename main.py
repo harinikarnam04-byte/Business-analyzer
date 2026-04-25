@@ -5,7 +5,6 @@ import pandas as pd
 import plotly.express as px
 
 # Initialize Groq client
-# Ensure GROQ_API_KEY is set in your Streamlit Cloud Secrets
 client = Groq(api_key=os.environ["GROQ_API_KEY"])
 
 # Page configuration
@@ -15,11 +14,11 @@ st.set_page_config(
     layout="wide"
 )
 
-# Custom CSS for a professional look (FIXED LINE 23)
+# Custom CSS for professional metric cards
 st.markdown("""
     <style>
     .main { background-color: #f8f9fa; }
-    .stMetric { 
+    [data-testid="stMetric"] {
         background-color: #ffffff; 
         padding: 20px; 
         border-radius: 12px; 
@@ -55,9 +54,25 @@ with col_left:
 
 with col_right:
     st.subheader("📊 Standard Budget Allocation")
-    # Professional Budget Pie Chart using Plotly
+    # Professional Budget Pie Chart
     budget_df = pd.DataFrame({
         "Category": ["Rent & Setup", "Inventory", "Marketing", "Cash Reserve", "Legal/Ops"],
         "Percentage": [35, 25, 20, 15, 5]
     })
-    fig = px.pie(budget_df, values='Percentage', names='Category',
+    
+    fig = px.pie(
+        budget_df, 
+        values='Percentage', 
+        names='Category', 
+        hole=0.5, 
+        color_discrete_sequence=px.colors.sequential.RdBu
+    )
+    fig.update_layout(margin=dict(t=0, b=0, l=0, r=0), height=250)
+    st.plotly_chart(fig, use_container_width=True)
+
+# Logic Execution
+if analyze_btn:
+    if not idea or not location or not budget:
+        st.error("Missing fields! Please provide Idea, Location, and Budget.")
+    else:
+        with st.spinner("Crunching market
