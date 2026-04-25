@@ -75,4 +75,5 @@ if analyze_btn:
     if not idea or not location or not budget:
         st.error("Missing fields! Please provide Idea, Location, and Budget.")
     else:
-        with st.spinner("Crunching market
+        # CHECKED: String is properly closed and bracketed
+        with st.spinner("Crunching market data and identifying risks..."):
