@@ -54,7 +54,6 @@ with col_left:
 
 with col_right:
     st.subheader("📊 Standard Budget Allocation")
-    # Professional Budget Pie Chart
     budget_df = pd.DataFrame({
         "Category": ["Rent & Setup", "Inventory", "Marketing", "Cash Reserve", "Legal/Ops"],
         "Percentage": [35, 25, 20, 15, 5]
@@ -75,5 +74,48 @@ if analyze_btn:
     if not idea or not location or not budget:
         st.error("Missing fields! Please provide Idea, Location, and Budget.")
     else:
-        # CHECKED: String is properly closed and bracketed
+        # FIXED: The block below is now correctly indented
         with st.spinner("Crunching market data and identifying risks..."):
+            prompt = f"""
+            You are a brutal, skeptical Business Consultant and VC. 
+            Analyze: {idea} in {location} with budget ₹{budget}.
+            DO NOT be optimistic. Be critical and honest.
+            
+            Structure the response exactly as follows:
+            1. EXECUTIVE SUMMARY (Feasibility at this budget)
+            2. COMPETITION (Estimate number of similar shops in {location})
+            3. BUDGET REALITY CHECK (Is ₹{budget} truly enough for {location}?)
+            4. WHY THIS MIGHT FAIL (Specific local risks)
+            5. FINAL VERDICT (GO / CAUTION / NO-GO)
+            6. SCORE (0-100)
+            """
+
+            try:
+                response = client.chat.completions.create(
+                    model="llama-3.1-8b-instant",
+                    messages=[{"role": "user", "content": prompt}]
+                )
+                
+                report_content = response.choices[0].message.content
+
+                st.markdown("---")
+                st.header("🤖 Consultant's Final Report")
+
+                # Metrics Row
+                m1, m2, m3 = st.columns(3)
+                with m1:
+                    st.metric("Risk Level", "Critical Assessment", delta="Honest View")
+                with m2:
+                    st.metric("Budget Status", f"₹{budget}", delta="Check Gap Analysis", delta_color="inverse")
+                with m3:
+                    st.metric("Market Type", "Red Ocean", help="Highly competitive area")
+
+                st.markdown("### 📝 Detailed Breakdown")
+                st.info(report_content)
+
+            except Exception as e:
+                st.error(f"Error communicating with AI: {e}")
+
+st.markdown("---")
+st.caption("Developed for MBA Business Analytics Portfolio | RVIM 2026")
+        
