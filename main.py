@@ -24,24 +24,35 @@ if st.button("Analyze"):
         prompt = f"""
 You are a world-class startup business consultant.
 
-Create a detailed business report in a structured format:
+Create a detailed and location-specific business report.
 
 Business Idea: {idea}
 Location: {location}
 Budget: {budget}
 
-Include the following sections:
+While analyzing, consider:
+- Local demand in the given location
+- Competition in that area
+- Customer preferences and culture
+- Pricing suitability
+- Feasibility based on local conditions
+
+IMPORTANT:
+- Provide an approximate number of competitors (as a range, e.g., 10–20)
+- Clearly mention that this is an estimate, not exact data
+
+Include:
 
 1. Executive Summary
-2. Demand Analysis
-3. Competition Analysis
+2. Demand Analysis (location-specific)
+3. Competition Analysis (include estimated competitor count)
 4. SWOT Analysis
 5. Risk Analysis
 6. Budget Feasibility
 7. Final Verdict (GO / NO-GO)
 8. Score (0-100)
 
-Make it realistic, practical, and actionable.
+Make it realistic, practical, and tailored to the location.
 """
 
         try:
@@ -59,3 +70,4 @@ Make it realistic, practical, and actionable.
 
         except Exception as e:
             st.error(f"Failed to generate report: {e}")
+        
