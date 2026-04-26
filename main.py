@@ -3,6 +3,7 @@ import streamlit as st
 from groq import Groq
 import pandas as pd
 import plotly.express as px
+from datetime import datetime
 
 # Initialize Groq client
 client = Groq(api_key=os.environ["GROQ_API_KEY"])
@@ -10,7 +11,7 @@ client = Groq(api_key=os.environ["GROQ_API_KEY"])
 # --- CORE CONFIGURATION ---
 st.set_page_config(page_title="BizVenture Pro", page_icon="🔍", layout="wide")
 
-# --- THEME PRESERVATION: Midnight Blue & High Contrast ---
+# --- THEME & VISIBILITY SECURE CSS (LOCKED) ---
 st.markdown("""
     <style>
     .stApp { background-color: #0f172a; }
@@ -21,7 +22,7 @@ st.markdown("""
     }
     section[data-testid="stSidebar"] * { color: #ffffff !important; }
 
-    /* REPORT BOX: White Background / Black Text for Phone Readability */
+    /* REPORT BOX: Solid White / Black Text for 100% Phone Contrast */
     .report-box { 
         background-color: #ffffff !important; 
         color: #000000 !important; 
@@ -32,7 +33,7 @@ st.markdown("""
     }
     .report-box * { color: #000000 !important; font-weight: 600 !important; line-height: 1.8; }
     
-    /* TABLE & CHART LEGEND */
+    /* TABLE FIX: Force visibility */
     .stTable, [data-testid="stTable"], [data-testid="stTable"] td { 
         background-color: #ffffff !important; 
         color: #000000 !important; 
@@ -59,12 +60,13 @@ if 'report_p2' not in st.session_state: st.session_state.report_p2 = ""
 if 'report_p3' not in st.session_state: st.session_state.report_p3 = ""
 
 st.markdown('<h1 style="text-align:center;">🔍 BizVenture Pro</h1>', unsafe_allow_html=True)
+st.markdown('<p style="text-align:center; color:#3b82f6; font-style:italic; font-size:1.2rem;">Connecting your vision to the global business world.</p>', unsafe_allow_html=True)
 
-# --- SIDEBAR: PARAMETERS ---
+# --- SIDEBAR (UNTOUCHED FUNCTIONALITY) ---
 with st.sidebar:
     st.markdown('### 🔍 Venture Parameters')
     idea = st.text_input("Venture Idea", placeholder="e.g. Pet Spa")
-    location = st.text_input("Location", placeholder="e.g. Bangalore")
+    location = st.text_input("Location", placeholder="e.g. Jayanagar, Bangalore")
     target = st.text_input("Target Audience", placeholder="e.g. Pet Lovers")
     budget = st.number_input("Capital (₹)", min_value=10000, value=500000)
     industry = st.selectbox("Industry", ["Retail", "Tech", "Manufacturing", "Food & Beverage", "Service"])
@@ -73,41 +75,39 @@ with st.sidebar:
 
 if analyze:
     st.session_state.page = 1
-    with st.spinner("🕵️ Internal Spelling Audit & Quality Check in Progress..."):
+    with st.spinner("🕵️ Internal Auditor: Checking spelling and local market data..."):
         prompt = f"""
         ROLE: Senior Business Auditor & Professional Copy Editor.
-        TASK: Create a professional 3-part business analysis for {idea} in {location}.
-        STRICT RULES: ZERO spelling mistakes. High-quality professional language. No symbols like (*, #).
+        TASK: Create a professional 3-part business analysis for {idea} specifically for {location}.
+        STRICT RULES: ZERO spelling mistakes. NO generic advice. Deep-dive into {location} market dynamics.
         
         PART 1: 
-        - GLOBAL BUSINESS TAGLINE.
-        - EXECUTIVE SUMMARY.
+        - GLOBAL BUSINESS TAGLINE: A catchy slogan connecting to the global world.
+        - EXECUTIVE SUMMARY: Specific to the {location} landscape.
         - THE 4Ps (Product, Price, Place, Promotion).
         - SWOT ANALYSIS.
-        - ENTREPRENEURIAL EXAMPLE (e.g. Steve Jobs, Ritesh Agarwal).
-        - FUNDING OPTIONS (Paths for ₹{budget}).
-        - COMPETITORS ANALYSIS (Local and Global).
+        - ENTREPRENEURIAL EXAMPLE: Relevant leader comparison.
+        - FUNDING OPTIONS: Specific paths for ₹{budget}.
+        - COMPETITORS ANALYSIS: Specific local competitors in {location} vs Global benchmarks.
 
         PART 2:
         - EXPLANATION OF EXPENDITURE.
-        - CASH REQUIREMENT & OPERATIONAL RUNWAY.
-        - TIME PERIOD TO SUCCESS (Break-even).
-        - PROFIT & SALES PROJECTIONS (Be honest/conservative).
-        - UNIT ECONOMICS (Margins per customer).
+        - CASH REQUIREMENT: Operational runway details.
+        - TIME PERIOD TO SUCCESS: Realistic break-even timeline.
+        - PROFIT & SALES PROJECTIONS: Be honest, conservative, and realistic.
+        - UNIT ECONOMICS: Clear breakdown of margins per unit/customer.
 
         PART 3:
         - OUR SUGGESTION: Success Rate Percentage.
         - FINAL GO/NO-GO VERDICT.
-        - LOSS RECOVERY PLAN (4 steps).
-        - ALTERNATIVE STARTING STRATEGY (If not suitable now, when/where else?).
+        - LOSS RECOVERY PLAN: 4 detailed recovery steps.
+        - ALTERNATIVE STARTING STRATEGY: If current plan is risky, when/where else to start?
         - REASONING FOR ANALYSIS.
-        
-        INPUTS: {idea}, {location}, {target}, Budget: ₹{budget}.
         """
         resp = client.chat.completions.create(model="llama-3.1-8b-instant", messages=[{"role": "user", "content": prompt}])
         full_text = resp.choices[0].message.content.replace("*", "").replace("#", "")
         
-        # Structure splitting
+        # Structure splitting logic
         sections = full_text.split("PART")
         st.session_state.report_p1 = sections[1] if len(sections) > 1 else full_text
         st.session_state.report_p2 = sections[2] if len(sections) > 2 else ""
@@ -122,26 +122,4 @@ if st.session_state.report_p1:
 
     elif st.session_state.page == 2:
         st.markdown("## 💹 Page 2: Financials & Unit Economics")
-        
-        # Expenditure Chart
-        df = pd.DataFrame({
-            "Category": ["Infrastructure", "Ops & Staff", "Marketing", "Emergency Reserve"],
-            "Amount": [budget*0.4, budget*0.3, budget*0.2, budget*0.1]
-        })
-        fig = px.pie(df, values='Amount', names='Category', hole=0.45)
-        fig.update_layout(paper_bgcolor='rgba(0,0,0,0)', font=dict(color="white", size=14))
-        st.plotly_chart(fig, use_container_width=True)
-        
-        st.markdown(f'<div class="report-box">{st.session_state.report_p2}</div>', unsafe_allow_html=True)
-        st.table(df)
-        
-        c1, c2 = st.columns(2)
-        c1.button("⬅️ Back", on_click=lambda: st.session_state.update({"page": 1}))
-        c2.button("Next: Verdict ➡️", on_click=lambda: st.session_state.update({"page": 3}))
-
-    elif st.session_state.page == 3:
-        st.markdown("## 🏆 Page 3: Professional Verdict")
-        st.markdown(f'<div class="report-box">{st.session_state.report_p3}</div>', unsafe_allow_html=True)
-        st.button("⬅️ Back to Financials", on_click=lambda: st.session_state.update({"page": 2}))
-else:
-    st.markdown('<div class="report-box" style="text-align:center;">👋 Dashboard Initialized. Enter venture details in the sidebar and click 🔍 GENERATE FULL AUDIT.</div>', unsafe_allow_html=True)
+        df = pd.DataFrame({"Category": ["Infrastructure", "Ops & Staff", "Marketing", "Emergency Fund"], "Amount": [budget
