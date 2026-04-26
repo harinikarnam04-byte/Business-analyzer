@@ -4,6 +4,7 @@ from groq import Groq
 import pandas as pd
 import plotly.express as px
 from datetime import datetime
+import re
 
 # Initialize Groq client
 client = Groq(api_key=os.environ["GROQ_API_KEY"])
@@ -55,9 +56,8 @@ st.markdown("""
 
 # --- SESSION STATE ---
 if 'page' not in st.session_state: st.session_state.page = 1
-if 'report_p1' not in st.session_state: st.session_state.report_p1 = ""
-if 'report_p2' not in st.session_state: st.session_state.report_p2 = ""
-if 'report_p3' not in st.session_state: st.session_state.report_p3 = ""
+for p in ['report_p1', 'report_p2', 'report_p3']:
+    if p not in st.session_state: st.session_state[p] = ""
 
 st.markdown('<h1 style="text-align:center;">🔍 BizVenture Pro</h1>', unsafe_allow_html=True)
 st.markdown('<p style="text-align:center; color:#3b82f6; font-style:italic; font-size:1.1rem;">Connecting your vision to the global business world.</p>', unsafe_allow_html=True)
@@ -75,43 +75,46 @@ with st.sidebar:
 
 if analyze:
     st.session_state.page = 1
-    with st.spinner("🕵️ Audit in progress... verifying spelling and local market data..."):
+    with st.spinner("🕵️ Finalizing Full Audit... checking segments and spelling..."):
         prompt = f"""
         ROLE: Senior Business Auditor & Professional Copy Editor.
         TASK: Create a professional 3-part business analysis for {idea} specifically for {location}.
-        STRICT RULES: ZERO spelling mistakes. NO generic advice. Analyze demographics and local competitors in {location}.
+        STRICT RULES: ZERO spelling mistakes. NO markdown symbols (* or #). 
+        YOU MUST CLEARLY LABEL EACH SECTION AS 'PART 1', 'PART 2', AND 'PART 3'.
         
         PART 1: 
         - GLOBAL BUSINESS TAGLINE.
         - EXECUTIVE SUMMARY: Specific to {location}.
         - THE 4Ps (Product, Price, Place, Promotion).
         - SWOT ANALYSIS.
-        - ENTREPRENEURIAL EXAMPLE: Comparison to a relevant leader.
-        - FUNDING OPTIONS: Specific paths for ₹{budget}.
-        - COMPETITORS ANALYSIS: Specific local outlook vs Global.
+        - ENTREPRENEURIAL EXAMPLE.
+        - FUNDING OPTIONS (Specific for ₹{budget}).
+        - COMPETITORS ANALYSIS (Local in {location} vs Global).
 
         PART 2:
         - EXPLANATION OF EXPENDITURE.
         - CASH REQUIREMENT & OPERATIONAL RUNWAY.
         - TIME PERIOD TO SUCCESS (Realistic break-even).
-        - HONEST PROFIT & SALES PROJECTIONS: (Conservative/Realistic).
+        - HONEST PROFIT & SALES PROJECTIONS: (Be conservative).
         - UNIT ECONOMICS (Margins per customer/unit).
 
         PART 3:
         - OUR SUGGESTION: Success Rate Percentage.
         - FINAL GO/NO-GO VERDICT.
-        - LOSS RECOVERY PLAN: 4 detailed steps.
-        - ALTERNATIVE STARTING STRATEGY: If not suitable now, when or where else?
+        - LOSS RECOVERY PLAN (4 detailed steps).
+        - ALTERNATIVE STARTING STRATEGY (If not suitable now, when or where else?).
         - REASONING FOR ANALYSIS.
         """
         resp = client.chat.completions.create(model="llama-3.1-8b-instant", messages=[{"role": "user", "content": prompt}])
         full_text = resp.choices[0].message.content.replace("*", "").replace("#", "")
         
-        # Structure splitting logic
-        sections = full_text.split("PART")
-        st.session_state.report_p1 = sections[1] if len(sections) > 1 else full_text
-        st.session_state.report_p2 = sections[2] if len(sections) > 2 else ""
-        st.session_state.report_p3 = sections[3] if len(sections) > 3 else ""
+        # SMART SPLITTING: Uses regex to find Part 1, 2, 3 regardless of case/format
+        parts = re.split(r'PART\s*[1-3]', full_text, flags=re.IGNORECASE)
+        
+        # Mapping to session state
+        st.session_state.report_p1 = parts[1].strip() if len(parts) > 1 else "Error: Segment 1 not found."
+        st.session_state.report_p2 = parts[2].strip() if len(parts) > 2 else "Error: Segment 2 not found."
+        st.session_state.report_p3 = parts[3].strip() if len(parts) > 3 else "Error: Segment 3 not found."
 
 # --- NAVIGATION LOGIC ---
 if st.session_state.report_p1:
@@ -141,11 +144,10 @@ if st.session_state.report_p1:
         st.markdown("## 🏆 Page 3: Professional Verdict")
         st.markdown(f'<div class="report-box">{st.session_state.report_p3}</div>', unsafe_allow_html=True)
         
-        # PDF/Text Export
-        full_audit = f"BIZVENTURE PRO: {idea} - {location}\nGenerated: {datetime.now().strftime('%Y-%m-%d')}\n\n" + st.session_state.report_p1 + st.session_state.report_p2 + st.session_state.report_p3
+        # Download Export
+        full_audit = f"BIZVENTURE PRO: {idea} - {location}\nGenerated: {datetime.now().strftime('%Y-%m-%d')}\n\n" + st.session_state.report_p1 + "\n\n" + st.session_state.report_p2 + "\n\n" + st.session_state.report_p3
         st.download_button(label="📥 Download Full Audit", data=full_audit, file_name=f"{idea}_Business_Audit.txt")
         
         st.button("⬅️ Back to Financials", on_click=lambda: st.session_state.update({"page": 2}))
 else:
-    st.markdown('<div class="report-box" style="text-align:center;">👋 System Ready. Enter venture details and click 🔍 GENERATE FULL AUDIT.</div>', unsafe_allow_html=True)
-        
+    st.markdown('<div class="report-box" style="text-align:center;">👋 System Online. Enter venture details and click 🔍 GENERATE FULL AUDIT.</div>', unsafe_allow_html=True)
