@@ -41,13 +41,13 @@ st.markdown("""
     </style>
     """, unsafe_allow_html=True)
 
-# --- SESSION STATE (CRITICAL FIX FOR PAGE ISSUES) ---
+# --- INDEPENDENT DATA BUFFERS (Fixes "Same Content" & "Restart" issues) ---
 if 'page' not in st.session_state: st.session_state.page = 1
-if 'p1_content' not in st.session_state: st.session_state.p1_content = ""
-if 'p2_content' not in st.session_state: st.session_state.p2_content = ""
-if 'p3_content' not in st.session_state: st.session_state.p3_content = ""
-if 'stored_loc' not in st.session_state: st.session_state.stored_loc = ""
-if 'stored_idea' not in st.session_state: st.session_state.stored_idea = ""
+if 'p1_store' not in st.session_state: st.session_state.p1_store = ""
+if 'p2_store' not in st.session_state: st.session_state.p2_store = ""
+if 'p3_store' not in st.session_state: st.session_state.p3_store = ""
+if 'user_loc' not in st.session_state: st.session_state.user_loc = ""
+if 'user_idea' not in st.session_state: st.session_state.user_idea = ""
 
 # --- HEADER & TAGLINE ---
 st.markdown('<h1 style="text-align:center;">🔍 BizVenture Pro</h1>', unsafe_allow_html=True)
@@ -56,68 +56,80 @@ st.markdown('<p style="text-align:center; color:#3b82f6; font-weight:bold; font-
 # --- SIDEBAR ---
 with st.sidebar:
     st.markdown('### 🔍 Audit Parameters')
-    idea = st.text_input("Venture Idea", placeholder="e.g. Fashion Boutique")
-    loc = st.text_input("Location", placeholder="e.g. Jayanagar, Bangalore")
-    target = st.text_input("Target Audience", placeholder="e.g. College Students")
-    budget = st.number_input("Capital (₹)", min_value=10000, value=500000)
-    industry = st.selectbox("Industry", ["Retail", "Service", "Food", "Tech", "Manufacturing"])
-    analyze = st.button("🔍 GENERATE FULL AUDIT")
+    idea_in = st.text_input("Venture Idea", placeholder="e.g. Pet Grooming")
+    loc_in = st.text_input("Location", placeholder="e.g. Jayanagar, Bangalore")
+    target_in = st.text_input("Target Audience", placeholder="e.g. Pet Owners")
+    budget_in = st.number_input("Capital (₹)", min_value=10000, value=500000)
+    industry_in = st.selectbox("Industry", ["Retail", "Service", "Food", "Tech", "Manufacturing"])
+    trigger = st.button("🔍 GENERATE FULL AUDIT")
 
-if analyze:
+if trigger:
     st.session_state.page = 1
-    st.session_state.stored_loc = loc
-    st.session_state.stored_idea = idea
-    with st.spinner(f"🕵️ Senior Auditor analyzing {loc} market..."):
-        # The prompt is hard-locked to provide unique content for each marker
-        query = f"""
+    st.session_state.user_loc = loc_in
+    st.session_state.user_idea = idea_in
+    with st.spinner(f"🕵️ Senior Auditor analyzing {loc_in}..."):
+        # The prompt is hard-coded to deliver unique data per page
+        full_query = f"""
         ACT AS: Senior Business Auditor. 
-        TASK: Deep Audit for {idea} in {loc} for {target} with ₹{budget}.
+        TASK: Deep Audit for {idea_in} in {loc_in} for {target_in} with ₹{budget_in}.
         
-        GEOGRAPHIC INTELLIGENCE:
-        1. Explicitly state if {loc} is Tier 1, 2, or 3.
-        2. Provide local-specific rent and labor costs for {loc}.
-        3. List specific local competitors in {loc}.
+        STRICT DATA ASSIGNMENT:
         
-        MANDATORY CONTENT: 4Ps, SWOT, Unit Economics, Success %, and 4-Step Recovery.
-        FORMATTING: No markdown (* or #). No intro. Use markers: [[S1]], [[S2]], [[S3]].
+        [[PAGE_1]]:
+        - City Tier (1, 2, or 3) for {loc_in}.
+        - Professional Elevator Pitch & Entrepreneur Profile needed.
+        - Deep Competitor Analysis for {loc_in}.
+        - Funding Sources for ₹{budget_in}.
+        - 4Ps & SWOT Analysis.
+        
+        [[PAGE_2]]:
+        - Local Rent & Salary estimates specific to {loc_in}.
+        - Unit Economics & Break-even month projection.
+        
+        [[PAGE_3]]:
+        - Success % and Go/No-Go Verdict.
+        - 4-Step Loss Recovery Strategy.
+        
+        FORMAT: No markdown. No intro. Start each part ONLY with [[PAGE_1]], [[PAGE_2]], [[PAGE_3]].
         """
         
         resp = client.chat.completions.create(
             model="llama-3.1-8b-instant", 
-            messages=[{"role": "user", "content": query}]
+            messages=[{"role": "user", "content": full_query}]
         )
-        raw = resp.choices[0].message.content.replace("*", "").replace("#", "")
+        clean_text = resp.choices[0].message.content.replace("*", "").replace("#", "")
         
-        # --- UNIQUE DATA ROUTING (Fixes "Same Content" Issue) ---
-        # We split the raw text and assign it to separate state variables
-        st.session_state.p1_content = raw.split("[[S1]]")[-1].split("[[S2]]")[0].strip()
-        st.session_state.p2_content = raw.split("[[S2]]")[-1].split("[[S3]]")[0].strip()
-        st.session_state.p3_content = raw.split("[[S3]]")[-1].strip()
+        # --- HARD ROUTING TO UNIQUE SLOTS ---
+        st.session_state.p1_store = clean_text.split("[[PAGE_1]]")[-1].split("[[PAGE_2]]")[0].strip()
+        st.session_state.p2_store = clean_text.split("[[PAGE_2]]")[-1].split("[[PAGE_3]]")[0].strip()
+        st.session_state.p3_store = clean_text.split("[[PAGE_3]]")[-1].strip()
 
-# --- NAVIGATION ---
-if st.session_state.p1_content:
-    if st.session_state.page == 1:
-        st.markdown(f"## 📊 Page 1: Strategic Intelligence ({st.session_state.stored_loc})")
-        st.markdown(f'<div class="report-box">{st.session_state.p1_content}</div>', unsafe_allow_html=True)
+# --- DISPLAY ENGINE ---
+report = st.session_state
+if report.p1_store:
+    if report.page == 1:
+        st.markdown(f"## 📊 Page 1: Strategy & Setup ({report.user_loc})")
+        st.markdown(f'<div class="report-box">{report.p1_store}</div>', unsafe_allow_html=True)
         st.button("Next: Economics ➡️", on_click=lambda: st.session_state.update({"page": 2}))
 
-    elif st.session_state.page == 2:
-        st.markdown(f"## 💹 Page 2: Financial Projections ({st.session_state.stored_loc})")
-        df = pd.DataFrame({"Category": ["Setup", "Ops", "Marketing", "Reserve"], "Amt": [budget*0.4, budget*0.3, budget*0.2, budget*0.1]})
-        st.plotly_chart(px.pie(df, values='Amt', names='Category', hole=0.4).update_layout(paper_bgcolor='rgba(0,0,0,0)', font=dict(color="white")), use_container_width=True)
-        st.markdown(f'<div class="report-box">{st.session_state.p2_content}</div>', unsafe_allow_html=True)
-        st.table(df)
+    elif report.page == 2:
+        st.markdown(f"## 💹 Page 2: Financials & Local Costs ({report.user_loc})")
+        pie_df = pd.DataFrame({"Item": ["Setup", "Operations", "Marketing", "Reserve"], "Amt": [budget_in*0.4, budget_in*0.3, budget_in*0.2, budget_in*0.1]})
+        st.plotly_chart(px.pie(pie_df, values='Amt', names='Item', hole=0.4).update_layout(paper_bgcolor='rgba(0,0,0,0)', font=dict(color="white")), use_container_width=True)
+        st.markdown(f'<div class="report-box">{report.p2_store}</div>', unsafe_allow_html=True)
+        st.table(pie_df)
         c1, c2 = st.columns(2)
         c1.button("⬅️ Back", on_click=lambda: st.session_state.update({"page": 1}))
         c2.button("Next: Verdict ➡️", on_click=lambda: st.session_state.update({"page": 3}))
 
-    elif st.session_state.page == 3:
+    elif report.page == 3:
         st.markdown("## 🏆 Page 3: Professional Verdict")
-        st.markdown(f'<div class="report-box">{st.session_state.p3_content}</div>', unsafe_allow_html=True)
+        st.markdown(f'<div class="report-box">{report.p3_store}</div>', unsafe_allow_html=True)
         
-        # Download Feature
-        full_txt = f"AUDIT: {st.session_state.stored_idea}\n\nSTRATEGY:\n{st.session_state.p1_content}\n\nECONOMICS:\n{st.session_state.p2_content}\n\nVERDICT:\n{st.session_state.p3_content}"
-        st.download_button("📥 Download Full Audit", data=full_txt, file_name=f"Audit_{st.session_state.stored_idea}.txt")
+        # Download Data
+        final_txt = f"AUDIT: {report.user_idea}\n\nSTRATEGY:\n{report.p1_store}\n\nECONOMICS:\n{report.p2_store}\n\nVERDICT:\n{report.p3_store}"
+        st.download_button("📥 Download Report", data=final_txt, file_name=f"Audit_{report.user_idea}.txt")
         st.button("⬅️ Back", on_click=lambda: st.session_state.update({"page": 2}))
 else:
-    st.markdown('<div class="report-box" style="text-align:center;">👋 Ready to audit. Enter parameters and click Generate.</div>', unsafe_allow_html=True)
+    st.markdown('<div class="report-box" style="text-align:center;">👋 Ready to connect you to the business world. Fill the sidebar and click Generate.</div>', unsafe_allow_html=True)
+    
