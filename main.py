@@ -41,13 +41,12 @@ st.markdown("""
     </style>
     """, unsafe_allow_html=True)
 
-# --- INDEPENDENT MEMORY SLOTS (The "No-Repeat" Vault) ---
+# --- SESSION STATE (Independent Memory Blocks) ---
 if 'page' not in st.session_state: st.session_state.page = 1
-if 'p1_vault' not in st.session_state: st.session_state.p1_vault = ""
-if 'p2_vault' not in st.session_state: st.session_state.p2_vault = ""
-if 'p3_vault' not in st.session_state: st.session_state.p3_vault = ""
-if 'loc_cache' not in st.session_state: st.session_state.loc_cache = ""
-if 'idea_cache' not in st.session_state: st.session_state.idea_cache = ""
+if 'p1_mem' not in st.session_state: st.session_state.p1_mem = ""
+if 'p2_mem' not in st.session_state: st.session_state.p2_mem = ""
+if 'p3_mem' not in st.session_state: st.session_state.p3_mem = ""
+if 'loc_tag' not in st.session_state: st.session_state.loc_tag = ""
 
 # --- HEADER & TAGLINE ---
 st.markdown('<h1 style="text-align:center;">🔍 BizVenture Pro</h1>', unsafe_allow_html=True)
@@ -56,87 +55,82 @@ st.markdown('<p style="text-align:center; color:#3b82f6; font-weight:bold; font-
 # --- SIDEBAR ---
 with st.sidebar:
     st.markdown('### 🔍 Audit Parameters')
-    in_idea = st.text_input("Venture Idea", placeholder="e.g. Boutique Gym")
-    in_loc = st.text_input("Location", placeholder="e.g. Jayanagar, Bangalore")
-    in_target = st.text_input("Target Audience", placeholder="e.g. Working Professionals")
-    in_budget = st.number_input("Capital (₹)", min_value=10000, value=500000)
-    in_indus = st.selectbox("Industry", ["Retail", "Service", "Food", "Tech", "Manufacturing"])
-    generate_audit = st.button("🔍 GENERATE FULL AUDIT")
+    u_idea = st.text_input("Venture Idea", placeholder="e.g. Organic Cafe")
+    u_loc = st.text_input("Location", placeholder="e.g. Jayanagar, Bangalore")
+    u_target = st.text_input("Target Audience", placeholder="e.g. Health-conscious professionals")
+    u_budget = st.number_input("Capital (₹)", min_value=10000, value=500000)
+    u_indus = st.selectbox("Industry", ["Retail", "Service", "Food", "Tech", "Manufacturing"])
+    trigger = st.button("🔍 GENERATE FULL AUDIT")
 
-if generate_audit:
+if trigger:
     st.session_state.page = 1
-    st.session_state.loc_cache = in_loc
-    st.session_state.idea_cache = in_idea
-    with st.spinner(f"🕵️ Senior Auditor analyzing {in_loc}..."):
-        # The prompt is now strictly segmented to prevent "leakage"
-        final_query = f"""
+    st.session_state.loc_tag = u_loc
+    with st.spinner(f"🕵️ Senior Auditor performing localized deep-dive for {u_loc}..."):
+        # The prompt is hard-coded with invisible delimiters to prevent data leakage
+        query = f"""
         ACT AS: Senior Business Auditor. 
-        TASK: Brutal Professional Audit for {in_idea} in {in_loc} targeting {in_target} with ₹{in_budget}.
+        TASK: High-Fidelity Audit for {u_idea} in {u_loc} for {u_target} with ₹{u_budget}.
         
-        [[PAGE_1]]:
-        - City Tier (1, 2, or 3) for {in_loc}.
-        - Elevator Pitch.
-        - Entrepreneurial Inspiration (MAX 3 LINES).
-        - Deep Competitor Analysis for {in_loc} (Identify gaps and weaknesses).
-        - Specific Funding Sources for ₹{in_budget}.
+        PART 1 (Strategic Analysis):
+        - Identify City Tier (1, 2, or 3) for {u_loc}.
+        - Professional Elevator Pitch.
+        - Entrepreneurial Inspiration (STRICTLY 3 LINES).
+        - Deep Competitor Analysis for {u_loc} (Identify service gaps and weaknesses).
+        - Specific Funding Sources for ₹{u_budget}.
         - 4Ps & SWOT Analysis.
         
-        [[PAGE_2]]:
-        - Localized Intelligence: Specific monthly rent and salary estimates for {in_loc}.
+        PART 2 (Local Economics):
+        - Specific monthly Rent and Salary estimates for {u_loc}.
         - Unit Economics & Monthly Expense Breakdown.
         - Logical Break-even month projection.
         
-        [[PAGE_3]]:
-        - Success percentage: XX% (Based on market research and competition).
-        - Go/No-Go Verdict: [Decision] (Justification based on risk).
-        - 4-Step Loss Recovery Strategy:
-          Step 1: Financial Review & Cost Reduction.
-          Step 2: Customer Acquisition Pivot.
-          Step 3: Pricing & Service Adjustment.
-          Step 4: Revenue Diversification.
+        PART 3 (Final Verdict):
+        - Success percentage: XX% (Provide detailed reasoning based on market research and competition).
+        - Go/No-Go Verdict: [Decision] (Justification subject to refinement of projections).
+        - 4-Step Loss Recovery Strategy: Financial Review, Customer Pivot, Service Adjustment, and Revenue Diversification.
         
-        STRICT RULES: NO MARKDOWN. NO INTRO. 
-        You MUST put markers [[S1]], [[S2]], and [[S3]] before each respective page content.
+        FORMAT: NO MARKDOWN. NO INTRO. NO PAGE NUMBERS IN TEXT.
+        Put markers: [S1] before Part 1, [S2] before Part 2, [S3] before Part 3.
         """
         
         resp = client.chat.completions.create(
             model="llama-3.1-8b-instant", 
-            messages=[{"role": "user", "content": final_query}]
+            messages=[{"role": "user", "content": query}]
         )
         raw_text = resp.choices[0].message.content.replace("*", "").replace("#", "")
         
-        # --- BULLETPROOF PARSING ---
+        # --- PRECISE EXTRACTION LOGIC ---
         try:
-            st.session_state.p1_vault = raw_text.split("[[S1]]")[-1].split("[[S2]]")[0].strip()
-            st.session_state.p2_vault = raw_text.split("[[S2]]")[-1].split("[[S3]]")[0].strip()
-            st.session_state.p3_vault = raw_text.split("[[S3]]")[-1].strip()
+            st.session_state.p1_mem = raw_text.split("[S1]")[-1].split("[S2]")[0].strip()
+            st.session_state.p2_mem = raw_text.split("[S2]")[-1].split("[S3]")[0].strip()
+            st.session_state.p3_mem = raw_text.split("[S3]")[-1].strip()
         except:
-            st.session_state.p1_vault = "Syncing error. Please try again."
+            st.session_state.p1_mem = "Sync error. Please refine parameters and try again."
 
-# --- NAVIGATION & DISPLAY ---
-report = st.session_state
-if report.p1_vault:
-    if report.page == 1:
-        st.markdown(f"## 📊 Page 1: Strategic Setup ({report.loc_cache})")
-        st.markdown(f'<div class="report-box">{report.p1_vault}</div>', unsafe_allow_html=True)
+# --- NAVIGATION ---
+s_state = st.session_state
+if s_state.p1_mem:
+    if s_state.page == 1:
+        st.markdown(f"## 📊 Page 1: Strategy & Setup ({s_state.loc_tag})")
+        st.markdown(f'<div class="report-box">{s_state.p1_mem}</div>', unsafe_allow_html=True)
         st.button("Next: Economics ➡️", on_click=lambda: st.session_state.update({"page": 2}))
 
-    elif report.page == 2:
-        st.markdown(f"## 💹 Page 2: Financial Deep-Dive ({report.loc_cache})")
-        pie_df = pd.DataFrame({"Item": ["Setup", "Ops", "Marketing", "Reserve"], "Amt": [in_budget*0.4, in_budget*0.3, in_budget*0.2, in_budget*0.1]})
-        st.plotly_chart(px.pie(pie_df, values='Amt', names='Item', hole=0.4).update_layout(paper_bgcolor='rgba(0,0,0,0)', font=dict(color="white")), use_container_width=True)
-        st.markdown(f'<div class="report-box">{report.p2_vault}</div>', unsafe_allow_html=True)
-        st.table(pie_df)
+    elif s_state.page == 2:
+        st.markdown(f"## 💹 Page 2: Financial Intelligence ({s_state.loc_tag})")
+        df = pd.DataFrame({"Item": ["Infrastructure", "Ops", "Marketing", "Reserve"], "Amt": [u_budget*0.4, u_budget*0.3, u_budget*0.2, u_budget*0.1]})
+        st.plotly_chart(px.pie(df, values='Amt', names='Item', hole=0.4).update_layout(paper_bgcolor='rgba(0,0,0,0)', font=dict(color="white")), use_container_width=True)
+        st.markdown(f'<div class="report-box">{s_state.p2_mem}</div>', unsafe_allow_html=True)
+        st.table(df)
         c1, c2 = st.columns(2)
         c1.button("⬅️ Back", on_click=lambda: st.session_state.update({"page": 1}))
         c2.button("Next: Verdict ➡️", on_click=lambda: st.session_state.update({"page": 3}))
 
-    elif report.page == 3:
+    elif s_state.page == 3:
         st.markdown("## 🏆 Page 3: Professional Verdict")
-        st.markdown(f'<div class="report-box">{report.p3_vault}</div>', unsafe_allow_html=True)
+        st.markdown(f'<div class="report-box">{s_state.p3_mem}</div>', unsafe_allow_html=True)
         
-        full_report = f"BIZVENTURE PRO AUDIT: {report.idea_cache}\n\nSTRATEGY:\n{report.p1_vault}\n\nECONOMICS:\n{report.p2_vault}\n\nVERDICT:\n{report.p3_vault}"
-        st.download_button("📥 Download Report", data=full_report, file_name=f"Audit_{report.idea_cache}.txt")
+        full_audit = f"BIZVENTURE PRO AUDIT\n\nSTRATEGY:\n{s_state.p1_mem}\n\nECONOMICS:\n{s_state.p2_mem}\n\nVERDICT:\n{s_state.p3_mem}"
+        st.download_button("📥 Download Full Audit Report", data=full_audit, file_name=f"Audit_Report.txt")
         st.button("⬅️ Back", on_click=lambda: st.session_state.update({"page": 2}))
 else:
-    st.markdown('<div class="report-box" style="text-align:center;">👋 Auditor Online. Ready to connect you to the business world.</div>', unsafe_allow_html=True)
+    st.markdown('<div class="report-box" style="text-align:center;">👋 Welcome. Auditor is ready to connect you to the business world.</div>', unsafe_allow_html=True)
