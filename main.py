@@ -57,22 +57,24 @@ with st.sidebar:
     st.markdown('### 🔍 Audit Parameters')
     u_idea = st.text_input("Venture Idea", placeholder="e.g. Organic Cafe")
     u_loc = st.text_input("Location", placeholder="e.g. Jayanagar, Bangalore")
-    u_target = st.text_input("Target Audience", placeholder="e.g. Health-conscious professionals")
+    u_target = st.text_input("Target Audience", placeholder="e.g. Professionals")
     u_budget = st.number_input("Capital (₹)", min_value=10000, value=500000)
     u_indus = st.selectbox("Industry", ["Retail", "Service", "Food", "Tech", "Manufacturing"])
     trigger = st.button("🔍 GENERATE FULL AUDIT")
 
 if trigger:
+    # Reset state for fresh generation
     st.session_state.page = 1
     st.session_state.loc_tag = u_loc
+    
     with st.spinner(f"🕵️ Senior Auditor performing localized deep-dive for {u_loc}..."):
-        # The prompt is hard-coded with invisible delimiters to prevent data leakage
+        # INTEGRATED: Geographic Accuracy + Marker logic
         query = f"""
         ACT AS: Senior Business Auditor. 
         TASK: High-Fidelity Audit for {u_idea} in {u_loc} for {u_target} with ₹{u_budget}.
         
         PART 1 (Strategic Analysis):
-        - Identify City Tier (1, 2, or 3) for {u_loc}.
+        - Identify City Tier (CRITICAL: According to RBI/Census standards, Bangalore, Mumbai, Delhi, Chennai, Hyderabad, Kolkata, Pune, and Ahmedabad MUST be TIER 1. Verify this for {u_loc}).
         - Professional Elevator Pitch.
         - Entrepreneurial Inspiration (STRICTLY 3 LINES).
         - Deep Competitor Analysis for {u_loc} (Identify service gaps and weaknesses).
@@ -93,19 +95,23 @@ if trigger:
         Put markers: [S1] before Part 1, [S2] before Part 2, [S3] before Part 3.
         """
         
-        resp = client.chat.completions.create(
-            model="llama-3.1-8b-instant", 
-            messages=[{"role": "user", "content": query}]
-        )
-        raw_text = resp.choices[0].message.content.replace("*", "").replace("#", "")
-        
-        # --- PRECISE EXTRACTION LOGIC ---
         try:
+            resp = client.chat.completions.create(
+                model="llama-3.1-8b-instant", 
+                messages=[{"role": "user", "content": query}]
+            )
+            raw_text = resp.choices[0].message.content.replace("*", "").replace("#", "")
+            
+            # --- PRECISE EXTRACTION LOGIC ---
             st.session_state.p1_mem = raw_text.split("[S1]")[-1].split("[S2]")[0].strip()
             st.session_state.p2_mem = raw_text.split("[S2]")[-1].split("[S3]")[0].strip()
             st.session_state.p3_mem = raw_text.split("[S3]")[-1].strip()
-        except:
-            st.session_state.p1_mem = "Sync error. Please refine parameters and try again."
+            
+            # INTEGRATED: Auto-display report after generation
+            st.rerun() 
+            
+        except Exception as e:
+            st.error("Audit processing failed. Please try again.")
 
 # --- NAVIGATION ---
 s_state = st.session_state
