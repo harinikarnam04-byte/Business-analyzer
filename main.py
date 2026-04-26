@@ -16,7 +16,6 @@ st.set_page_config(page_title="BizVenture Pro", page_icon="🔍", layout="wide")
 st.markdown("""
     <style>
     .stApp { background-color: #0f172a; }
-    
     section[data-testid="stSidebar"] { 
         background-color: #000000 !important; 
         border-right: 3px solid #2563eb; 
@@ -75,64 +74,45 @@ with st.sidebar:
 
 if analyze:
     st.session_state.page = 1
-    with st.spinner("🕵️ Finalizing Full Audit... checking segments and spelling..."):
+    with st.spinner(f"🕵️ Analyzing {location} market tier and competitor intelligence..."):
         prompt = f"""
-        ROLE: Senior Business Auditor & Professional Copy Editor.
-        TASK: Create a professional 3-part business analysis for {idea} specifically for {location}.
-        STRICT RULES: ZERO spelling mistakes. NO markdown symbols (* or #). 
-        YOU MUST CLEARLY LABEL EACH SECTION AS 'PART 1', 'PART 2', AND 'PART 3'.
+        ROLE: High-Level Business Auditor & Market Intelligence Expert.
+        TASK: Perform a brutal, honest, and location-specific feasibility audit for {idea} in {location}.
         
-        PART 1: 
-        - GLOBAL BUSINESS TAGLINE.
-        - EXECUTIVE SUMMARY: Specific to {location}.
-        - THE 4Ps (Product, Price, Place, Promotion).
-        - SWOT ANALYSIS.
-        - ENTREPRENEURIAL EXAMPLE.
-        - FUNDING OPTIONS (Specific for ₹{budget}).
-        - COMPETITORS ANALYSIS (Local in {location} vs Global).
+        INTELLIGENCE DIRECTIVES:
+        1. FEASIBILITY CHECK: Determine if this business is actually possible in {location} with a budget of ₹{budget}.
+        2. CITY TIER ANALYSIS: Adjust Unit Economics, Rent, and Labor for {location} (Tier 1 vs Tier 2/3). 
+        3. COMPETITOR MAPPING: Identify specific saturation levels and local competitor types in {location}.
+        4. ZERO spelling mistakes. NO markdown symbols (* or #). 
+        5. USE HEADINGS 'PART 1', 'PART 2', AND 'PART 3'.
 
-        PART 2:
-        - EXPLANATION OF EXPENDITURE.
-        - CASH REQUIREMENT & OPERATIONAL RUNWAY.
-        - TIME PERIOD TO SUCCESS (Realistic break-even).
-        - HONEST PROFIT & SALES PROJECTIONS: (Be conservative).
-        - UNIT ECONOMICS (Margins per customer/unit).
-
-        PART 3:
-        - OUR SUGGESTION: Success Rate Percentage.
-        - FINAL GO/NO-GO VERDICT.
-        - LOSS RECOVERY PLAN (4 detailed steps).
-        - ALTERNATIVE STARTING STRATEGY (If not suitable now, when or where else?).
-        - REASONING FOR ANALYSIS.
+        PART 1: Global Tagline, Location-Specific Executive Summary, 4Ps, SWOT (Specific to {location}), Entrepreneurial Example, Funding Paths for ₹{budget}, and Detailed Competitor Analysis.
+        PART 2: Realistic Expenditure (Local rent/labor), Cash Requirement, Time to Success, Conservative Sales Projections, and Location-based Unit Economics.
+        PART 3: Success Rate %, Brutal Go/No-Go Verdict, 4-Step Loss Recovery Plan, Alternative Strategy, and Reasoning for Analysis.
         """
         resp = client.chat.completions.create(model="llama-3.1-8b-instant", messages=[{"role": "user", "content": prompt}])
         full_text = resp.choices[0].message.content.replace("*", "").replace("#", "")
         
-        # SMART SPLITTING: Uses regex to find Part 1, 2, 3 regardless of case/format
+        # SMART SPLITTING
         parts = re.split(r'PART\s*[1-3]', full_text, flags=re.IGNORECASE)
-        
-        # Mapping to session state
-        st.session_state.report_p1 = parts[1].strip() if len(parts) > 1 else "Error: Segment 1 not found."
-        st.session_state.report_p2 = parts[2].strip() if len(parts) > 2 else "Error: Segment 2 not found."
-        st.session_state.report_p3 = parts[3].strip() if len(parts) > 3 else "Error: Segment 3 not found."
+        st.session_state.report_p1 = parts[1].strip() if len(parts) > 1 else "Error generating Segment 1."
+        st.session_state.report_p2 = parts[2].strip() if len(parts) > 2 else "Error generating Segment 2."
+        st.session_state.report_p3 = parts[3].strip() if len(parts) > 3 else "Error generating Segment 3."
 
 # --- NAVIGATION LOGIC ---
 if st.session_state.report_p1:
     if st.session_state.page == 1:
-        st.markdown("## 📊 Page 1: Strategic Blueprint")
+        st.markdown(f"## 📊 Page 1: Strategic Intelligence for {location}")
         st.markdown(f'<div class="report-box">{st.session_state.report_p1}</div>', unsafe_allow_html=True)
         st.button("Next: Economics & Projections ➡️", on_click=lambda: st.session_state.update({"page": 2}))
 
     elif st.session_state.page == 2:
-        st.markdown("## 💹 Page 2: Financials & Unit Economics")
+        st.markdown(f"## 💹 Page 2: Financials & Unit Economics ({location})")
         df = pd.DataFrame({
-            "Category": ["Infrastructure", "Ops & Staff", "Marketing", "Emergency Fund"],
+            "Category": ["Setup Costs", "Ops & Staff", "Marketing", "Emergency Fund"],
             "Amount": [budget*0.4, budget*0.3, budget*0.2, budget*0.1]
         })
-        fig = px.pie(df, values='Amount', names='Category', hole=0.45)
-        fig.update_layout(paper_bgcolor='rgba(0,0,0,0)', font=dict(color="white", size=14))
-        st.plotly_chart(fig, use_container_width=True)
-        
+        st.plotly_chart(px.pie(df, values='Amount', names='Category', hole=0.45).update_layout(paper_bgcolor='rgba(0,0,0,0)', font=dict(color="white")), use_container_width=True)
         st.markdown(f'<div class="report-box">{st.session_state.report_p2}</div>', unsafe_allow_html=True)
         st.table(df)
         
@@ -144,10 +124,8 @@ if st.session_state.report_p1:
         st.markdown("## 🏆 Page 3: Professional Verdict")
         st.markdown(f'<div class="report-box">{st.session_state.report_p3}</div>', unsafe_allow_html=True)
         
-        # Download Export
         full_audit = f"BIZVENTURE PRO: {idea} - {location}\nGenerated: {datetime.now().strftime('%Y-%m-%d')}\n\n" + st.session_state.report_p1 + "\n\n" + st.session_state.report_p2 + "\n\n" + st.session_state.report_p3
-        st.download_button(label="📥 Download Full Audit", data=full_audit, file_name=f"{idea}_Business_Audit.txt")
-        
+        st.download_button(label="📥 Download Full Audit", data=full_audit, file_name=f"{idea}_{location}_Audit.txt")
         st.button("⬅️ Back to Financials", on_click=lambda: st.session_state.update({"page": 2}))
 else:
-    st.markdown('<div class="report-box" style="text-align:center;">👋 System Online. Enter venture details and click 🔍 GENERATE FULL AUDIT.</div>', unsafe_allow_html=True)
+    st.markdown('<div class="report-box" style="text-align:center;">👋 System Online. Localized intelligence active.</div>', unsafe_allow_html=True)
