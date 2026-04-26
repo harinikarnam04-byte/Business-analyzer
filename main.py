@@ -11,7 +11,7 @@ client = Groq(api_key=os.environ["GROQ_API_KEY"])
 # --- CORE CONFIGURATION ---
 st.set_page_config(page_title="BizVenture Pro", page_icon="🔍", layout="wide")
 
-# --- THEME & VISIBILITY SECURE CSS (LOCKED) ---
+# --- THEME PRESERVATION (LOCKED) ---
 st.markdown("""
     <style>
     .stApp { background-color: #0f172a; }
@@ -33,7 +33,7 @@ st.markdown("""
     }
     .report-box * { color: #000000 !important; font-weight: 600 !important; line-height: 1.8; }
     
-    /* TABLE FIX: Force visibility */
+    /* TABLE & CHART LEGEND VISIBILITY */
     .stTable, [data-testid="stTable"], [data-testid="stTable"] td { 
         background-color: #ffffff !important; 
         color: #000000 !important; 
@@ -60,9 +60,9 @@ if 'report_p2' not in st.session_state: st.session_state.report_p2 = ""
 if 'report_p3' not in st.session_state: st.session_state.report_p3 = ""
 
 st.markdown('<h1 style="text-align:center;">🔍 BizVenture Pro</h1>', unsafe_allow_html=True)
-st.markdown('<p style="text-align:center; color:#3b82f6; font-style:italic; font-size:1.2rem;">Connecting your vision to the global business world.</p>', unsafe_allow_html=True)
+st.markdown('<p style="text-align:center; color:#3b82f6; font-style:italic; font-size:1.1rem;">Connecting your vision to the global business world.</p>', unsafe_allow_html=True)
 
-# --- SIDEBAR (UNTOUCHED FUNCTIONALITY) ---
+# --- SIDEBAR: PARAMETERS ---
 with st.sidebar:
     st.markdown('### 🔍 Venture Parameters')
     idea = st.text_input("Venture Idea", placeholder="e.g. Pet Spa")
@@ -75,33 +75,33 @@ with st.sidebar:
 
 if analyze:
     st.session_state.page = 1
-    with st.spinner("🕵️ Internal Auditor: Checking spelling and local market data..."):
+    with st.spinner("🕵️ Audit in progress... verifying spelling and local market data..."):
         prompt = f"""
         ROLE: Senior Business Auditor & Professional Copy Editor.
         TASK: Create a professional 3-part business analysis for {idea} specifically for {location}.
-        STRICT RULES: ZERO spelling mistakes. NO generic advice. Deep-dive into {location} market dynamics.
+        STRICT RULES: ZERO spelling mistakes. NO generic advice. Analyze demographics and local competitors in {location}.
         
         PART 1: 
-        - GLOBAL BUSINESS TAGLINE: A catchy slogan connecting to the global world.
-        - EXECUTIVE SUMMARY: Specific to the {location} landscape.
+        - GLOBAL BUSINESS TAGLINE.
+        - EXECUTIVE SUMMARY: Specific to {location}.
         - THE 4Ps (Product, Price, Place, Promotion).
         - SWOT ANALYSIS.
-        - ENTREPRENEURIAL EXAMPLE: Relevant leader comparison.
+        - ENTREPRENEURIAL EXAMPLE: Comparison to a relevant leader.
         - FUNDING OPTIONS: Specific paths for ₹{budget}.
-        - COMPETITORS ANALYSIS: Specific local competitors in {location} vs Global benchmarks.
+        - COMPETITORS ANALYSIS: Specific local outlook vs Global.
 
         PART 2:
         - EXPLANATION OF EXPENDITURE.
-        - CASH REQUIREMENT: Operational runway details.
-        - TIME PERIOD TO SUCCESS: Realistic break-even timeline.
-        - PROFIT & SALES PROJECTIONS: Be honest, conservative, and realistic.
-        - UNIT ECONOMICS: Clear breakdown of margins per unit/customer.
+        - CASH REQUIREMENT & OPERATIONAL RUNWAY.
+        - TIME PERIOD TO SUCCESS (Realistic break-even).
+        - HONEST PROFIT & SALES PROJECTIONS: (Conservative/Realistic).
+        - UNIT ECONOMICS (Margins per customer/unit).
 
         PART 3:
         - OUR SUGGESTION: Success Rate Percentage.
         - FINAL GO/NO-GO VERDICT.
-        - LOSS RECOVERY PLAN: 4 detailed recovery steps.
-        - ALTERNATIVE STARTING STRATEGY: If current plan is risky, when/where else to start?
+        - LOSS RECOVERY PLAN: 4 detailed steps.
+        - ALTERNATIVE STARTING STRATEGY: If not suitable now, when or where else?
         - REASONING FOR ANALYSIS.
         """
         resp = client.chat.completions.create(model="llama-3.1-8b-instant", messages=[{"role": "user", "content": prompt}])
@@ -113,13 +113,39 @@ if analyze:
         st.session_state.report_p2 = sections[2] if len(sections) > 2 else ""
         st.session_state.report_p3 = sections[3] if len(sections) > 3 else ""
 
-# --- PAGE NAVIGATION ---
+# --- NAVIGATION LOGIC ---
 if st.session_state.report_p1:
     if st.session_state.page == 1:
-        st.markdown("## 📊 Page 1: Strategic Intelligence")
+        st.markdown("## 📊 Page 1: Strategic Blueprint")
         st.markdown(f'<div class="report-box">{st.session_state.report_p1}</div>', unsafe_allow_html=True)
         st.button("Next: Economics & Projections ➡️", on_click=lambda: st.session_state.update({"page": 2}))
 
     elif st.session_state.page == 2:
         st.markdown("## 💹 Page 2: Financials & Unit Economics")
-        df = pd.DataFrame({"Category": ["Infrastructure", "Ops & Staff", "Marketing", "Emergency Fund"], "Amount": [budget
+        df = pd.DataFrame({
+            "Category": ["Infrastructure", "Ops & Staff", "Marketing", "Emergency Fund"],
+            "Amount": [budget*0.4, budget*0.3, budget*0.2, budget*0.1]
+        })
+        fig = px.pie(df, values='Amount', names='Category', hole=0.45)
+        fig.update_layout(paper_bgcolor='rgba(0,0,0,0)', font=dict(color="white", size=14))
+        st.plotly_chart(fig, use_container_width=True)
+        
+        st.markdown(f'<div class="report-box">{st.session_state.report_p2}</div>', unsafe_allow_html=True)
+        st.table(df)
+        
+        c1, c2 = st.columns(2)
+        c1.button("⬅️ Back", on_click=lambda: st.session_state.update({"page": 1}))
+        c2.button("Next: Verdict ➡️", on_click=lambda: st.session_state.update({"page": 3}))
+
+    elif st.session_state.page == 3:
+        st.markdown("## 🏆 Page 3: Professional Verdict")
+        st.markdown(f'<div class="report-box">{st.session_state.report_p3}</div>', unsafe_allow_html=True)
+        
+        # PDF/Text Export
+        full_audit = f"BIZVENTURE PRO: {idea} - {location}\nGenerated: {datetime.now().strftime('%Y-%m-%d')}\n\n" + st.session_state.report_p1 + st.session_state.report_p2 + st.session_state.report_p3
+        st.download_button(label="📥 Download Full Audit", data=full_audit, file_name=f"{idea}_Business_Audit.txt")
+        
+        st.button("⬅️ Back to Financials", on_click=lambda: st.session_state.update({"page": 2}))
+else:
+    st.markdown('<div class="report-box" style="text-align:center;">👋 System Ready. Enter venture details and click 🔍 GENERATE FULL AUDIT.</div>', unsafe_allow_html=True)
+        
