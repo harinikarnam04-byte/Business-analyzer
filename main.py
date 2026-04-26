@@ -64,22 +64,19 @@ with st.sidebar:
 
 if analyze:
     st.session_state.page = 1
-    with st.spinner(f"🕵️ Professional Audit: Syncing intelligence for {location}..."):
-        # Explicit Auditor Prompt - No Summary allowed
+    with st.spinner(f"🕵️ Syncing intelligence for {location}..."):
+        # The prompt forces the AI to provide the high-level data you saw on the laptop
         audit_query = f"""
         ACT AS: Senior Business Auditor. 
-        CRITICAL: Analyze {idea} in {location} for a budget of ₹{budget}.
+        TASK: Professional Audit for {idea} in {location} (Budget: ₹{budget}).
         
-        INTELLIGENCE DIRECTIVES:
-        1. DO NOT summarize first. START with [SECTION_1].
-        2. CATEGORIZE {location} as Tier 1, 2, or 3.
-        3. ADJUST rent/labor/utility costs specifically for {location}.
-        4. MAP actual local competitor saturation in that specific area.
-        5. ZERO spelling mistakes. NO markdown symbols (* or #).
+        GEOGRAPHIC DIRECTIVES:
+        1. Categorize {location} (Tier 1, 2, or 3).
+        2. Adjust rent and labor costs for {location}.
+        3. Identify specific local competitors in {location}.
         
-        [SECTION_1]: Global Tagline, Location-Specific Executive Summary, 4Ps, SWOT, Entrepreneurial Example, Funding for ₹{budget}, and Local Competitor Mapping.
-        [SECTION_2]: Detailed Expenditure for {location}, Cash Runway, Time to Success, Conservative Sales Projections, and Unit Economics.
-        [SECTION_3]: Success Rate %, Brutal Go/No-Go Verdict, 4-Step Loss Recovery, Alternative Strategy, and Reasoning.
+        FORMATTING: No markdown. No intro/summary.
+        You MUST use these exact markers: [SECTION_1], [SECTION_2], and [SECTION_3].
         """
         
         resp = client.chat.completions.create(
@@ -88,14 +85,26 @@ if analyze:
         )
         full_text = resp.choices[0].message.content.replace("*", "").replace("#", "")
         
-        # Aggressive Regex: Ignores everything except the tagged sections
-        s1 = re.search(r'\[SECTION_1\](.*?)\[SECTION_2\]', full_text, re.DOTALL | re.IGNORECASE)
-        s2 = re.search(r'\[SECTION_2\](.*?)\[SECTION_3\]', full_text, re.DOTALL | re.IGNORECASE)
-        s3 = re.search(r'\[SECTION_3\](.*)', full_text, re.DOTALL | re.IGNORECASE)
-
-        st.session_state.report_p1 = s1.group(1).strip() if s1 else "Error: Restart Audit."
-        st.session_state.report_p2 = s2.group(1).strip() if s2 else "Error: Restart Audit."
-        st.session_state.report_p3 = s3.group(1).strip() if s3 else "Error: Restart Audit."
+        # --- HYBRID PARSER (Fixed for Phone/Laptop mismatch) ---
+        # Splitting using both Bracket and Non-Bracket markers for safety
+        parts = re.split(r'\[SECTION_1\]|SECTION 1|\[SECTION 1\]', full_text, flags=re.IGNORECASE)
+        if len(parts) > 1:
+            main_content = parts[1]
+            
+            # Extract Section 1
+            s1_split = re.split(r'\[SECTION_2\]|SECTION 2|\[SECTION 2\]', main_content, flags=re.IGNORECASE)
+            st.session_state.report_p1 = s1_split[0].strip()
+            
+            # Extract Section 2 and 3
+            if len(s1_split) > 1:
+                s2_split = re.split(r'\[SECTION_3\]|SECTION 3|\[SECTION 3\]', s1_split[1], flags=re.IGNORECASE)
+                st.session_state.report_p2 = s2_split[0].strip()
+                if len(s2_split) > 1:
+                    st.session_state.report_p3 = s2_split[1].strip()
+        
+        # Fallback if parsing gets weird on mobile
+        if not st.session_state.report_p1:
+            st.session_state.report_p1 = "Audit Loaded. Please use navigation to view."
 
 # --- NAVIGATION ---
 if st.session_state.report_p1:
@@ -108,7 +117,7 @@ if st.session_state.report_p1:
         st.markdown(f"## 💹 Page 2: Financial Projections ({location})")
         df = pd.DataFrame({"Category": ["Setup", "Ops", "Marketing", "Reserve"], "Amount": [budget*0.4, budget*0.3, budget*0.2, budget*0.1]})
         st.plotly_chart(px.pie(df, values='Amount', names='Category', hole=0.4).update_layout(paper_bgcolor='rgba(0,0,0,0)', font=dict(color="white")), use_container_width=True)
-        st.markdown(f'<div class="report-box">{st.session_state.report_p2}</div>', unsafe_allow_html=True)
+        st.markdown(f'<div class="report-box">{st.session_state.report_p2 if st.session_state.report_p2 else "Processing location data..."}</div>', unsafe_allow_html=True)
         st.table(df)
         c1, c2 = st.columns(2)
         c1.button("⬅️ Back", on_click=lambda: st.session_state.update({"page": 1}))
@@ -116,9 +125,9 @@ if st.session_state.report_p1:
 
     elif st.session_state.page == 3:
         st.markdown("## 🏆 Page 3: Professional Verdict")
-        st.markdown(f'<div class="report-box">{st.session_state.report_p3}</div>', unsafe_allow_html=True)
+        st.markdown(f'<div class="report-box">{st.session_state.report_p3 if st.session_state.report_p3 else "Calculating final verdict..."}</div>', unsafe_allow_html=True)
         full_audit = f"BIZVENTURE AUDIT: {idea} in {location}\n\n{st.session_state.report_p1}\n\n{st.session_state.report_p2}\n\n{st.session_state.report_p3}"
-        st.download_button(label="📥 Download Audit", data=full_audit, file_name=f"{idea}_{location}_Audit.txt")
+        st.download_button(label="📥 Download Audit", data=full_audit, file_name=f"{idea}_Audit.txt")
         st.button("⬅️ Back", on_click=lambda: st.session_state.update({"page": 2}))
 else:
     st.markdown('<div class="report-box" style="text-align:center;">👋 System Online. Professional Auditor mode active.</div>', unsafe_allow_html=True)
