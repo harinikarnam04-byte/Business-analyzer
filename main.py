@@ -51,7 +51,6 @@ for p in ['report_p1', 'report_p2', 'report_p3']:
     if p not in st.session_state: st.session_state[p] = ""
 
 st.markdown('<h1 style="text-align:center;">🔍 BizVenture Pro</h1>', unsafe_allow_html=True)
-st.markdown('<p style="text-align:center; color:#3b82f6; font-style:italic;">Professional Market Intelligence & Audit</p>', unsafe_allow_html=True)
 
 # --- SIDEBAR ---
 with st.sidebar:
@@ -65,23 +64,21 @@ with st.sidebar:
 
 if analyze:
     st.session_state.page = 1
-    with st.spinner(f"🕵️ Professional Audit: Factoring {location} market tier..."):
-        # Unified prompt for all devices - Hard-coded Auditor Role
+    with st.spinner(f"🕵️ Professional Audit: Syncing intelligence for {location}..."):
+        # Explicit Auditor Prompt - No Summary allowed
         audit_query = f"""
         ACT AS: Senior Business Auditor. 
         CRITICAL: Analyze {idea} in {location} for a budget of ₹{budget}.
         
-        GEOGRAPHIC INTELLIGENCE (MANDATORY): 
-        1. Identify if {location} is Tier 1, 2, or 3. 
-        2. Adjust rent/labor costs specifically for {location} economic standards. 
-        3. Map actual local competitor types and saturation in {location}.
-        4. Evaluate if the venture is actually POSSIBLE/VIABLE in {location} with ₹{budget}.
+        INTELLIGENCE DIRECTIVES:
+        1. DO NOT summarize first. START with [SECTION_1].
+        2. CATEGORIZE {location} as Tier 1, 2, or 3.
+        3. ADJUST rent/labor/utility costs specifically for {location}.
+        4. MAP actual local competitor saturation in that specific area.
+        5. ZERO spelling mistakes. NO markdown symbols (* or #).
         
-        FORMATTING: No markdown (* or #). ZERO spelling mistakes. 
-        MANDATORY TAGS: Start each section with [SECTION_1], [SECTION_2], and [SECTION_3].
-
-        [SECTION_1]: Global Tagline, Location-Specific Executive Summary, 4Ps, SWOT, Entrepreneurial Example, Specific Funding for ₹{budget}, and Local Competitor Mapping.
-        [SECTION_2]: Detailed Expenditure, Cash Runway, Time to Success (Break-even), Honest Sales Projections, and Unit Economics.
+        [SECTION_1]: Global Tagline, Location-Specific Executive Summary, 4Ps, SWOT, Entrepreneurial Example, Funding for ₹{budget}, and Local Competitor Mapping.
+        [SECTION_2]: Detailed Expenditure for {location}, Cash Runway, Time to Success, Conservative Sales Projections, and Unit Economics.
         [SECTION_3]: Success Rate %, Brutal Go/No-Go Verdict, 4-Step Loss Recovery, Alternative Strategy, and Reasoning.
         """
         
@@ -91,16 +88,37 @@ if analyze:
         )
         full_text = resp.choices[0].message.content.replace("*", "").replace("#", "")
         
-        # Strict Regex Parsing for stability across all devices
+        # Aggressive Regex: Ignores everything except the tagged sections
         s1 = re.search(r'\[SECTION_1\](.*?)\[SECTION_2\]', full_text, re.DOTALL | re.IGNORECASE)
         s2 = re.search(r'\[SECTION_2\](.*?)\[SECTION_3\]', full_text, re.DOTALL | re.IGNORECASE)
         s3 = re.search(r'\[SECTION_3\](.*)', full_text, re.DOTALL | re.IGNORECASE)
 
-        st.session_state.report_p1 = s1.group(1).strip() if s1 else "Analysis Error: Restart Audit."
-        st.session_state.report_p2 = s2.group(1).strip() if s2 else "Analysis Error: Restart Audit."
-        st.session_state.report_p3 = s3.group(1).strip() if s3 else "Analysis Error: Restart Audit."
+        st.session_state.report_p1 = s1.group(1).strip() if s1 else "Error: Restart Audit."
+        st.session_state.report_p2 = s2.group(1).strip() if s2 else "Error: Restart Audit."
+        st.session_state.report_p3 = s3.group(1).strip() if s3 else "Error: Restart Audit."
 
 # --- NAVIGATION ---
 if st.session_state.report_p1:
     if st.session_state.page == 1:
-        st
+        st.markdown(f"## 📊 Page 1: Strategic Intelligence ({location})")
+        st.markdown(f'<div class="report-box">{st.session_state.report_p1}</div>', unsafe_allow_html=True)
+        st.button("Next: Economics ➡️", on_click=lambda: st.session_state.update({"page": 2}))
+
+    elif st.session_state.page == 2:
+        st.markdown(f"## 💹 Page 2: Financial Projections ({location})")
+        df = pd.DataFrame({"Category": ["Setup", "Ops", "Marketing", "Reserve"], "Amount": [budget*0.4, budget*0.3, budget*0.2, budget*0.1]})
+        st.plotly_chart(px.pie(df, values='Amount', names='Category', hole=0.4).update_layout(paper_bgcolor='rgba(0,0,0,0)', font=dict(color="white")), use_container_width=True)
+        st.markdown(f'<div class="report-box">{st.session_state.report_p2}</div>', unsafe_allow_html=True)
+        st.table(df)
+        c1, c2 = st.columns(2)
+        c1.button("⬅️ Back", on_click=lambda: st.session_state.update({"page": 1}))
+        c2.button("Next: Verdict ➡️", on_click=lambda: st.session_state.update({"page": 3}))
+
+    elif st.session_state.page == 3:
+        st.markdown("## 🏆 Page 3: Professional Verdict")
+        st.markdown(f'<div class="report-box">{st.session_state.report_p3}</div>', unsafe_allow_html=True)
+        full_audit = f"BIZVENTURE AUDIT: {idea} in {location}\n\n{st.session_state.report_p1}\n\n{st.session_state.report_p2}\n\n{st.session_state.report_p3}"
+        st.download_button(label="📥 Download Audit", data=full_audit, file_name=f"{idea}_{location}_Audit.txt")
+        st.button("⬅️ Back", on_click=lambda: st.session_state.update({"page": 2}))
+else:
+    st.markdown('<div class="report-box" style="text-align:center;">👋 System Online. Professional Auditor mode active.</div>', unsafe_allow_html=True)
