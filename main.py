@@ -7,107 +7,121 @@ import plotly.express as px
 # Initialize Groq client
 client = Groq(api_key=os.environ["GROQ_API_KEY"])
 
-# --- MOBILE-STABLE & EXECUTIVE CONFIG ---
+# --- CORE CONFIGURATION ---
 st.set_page_config(page_title="BizVenture Pro", page_icon="🔍", layout="centered")
 
-# --- EXECUTIVE THEME & MOBILE UI FIX ---
+# --- LIGHT YELLOW & HIGH CONTRAST UI ---
 st.markdown("""
     <style>
-    .stApp { background-color: #0f172a; color: #f1f5f9; }
-    section[data-testid="stSidebar"] { background-color: #020617 !important; border-right: 1px solid #1e293b; }
-    [data-testid="stMetric"] { background: #1e293b; border: 1px solid #38bdf8; padding: 15px; border-radius: 12px; }
-    .report-box { background: #1e293b; color: #ffffff !important; padding: 25px; border-radius: 12px; border: 1px solid #334155; font-size: 1.1rem; line-height: 1.8; }
-    .main-title { color: #38bdf8; font-size: 2.5rem; font-weight: 800; text-align: center; margin-bottom: 0px; }
-    .tagline { color: #64748b; font-size: 1.1rem; text-align: center; margin-bottom: 30px; }
-    .stButton>button { border-radius: 20px; font-weight: bold; background-color: #38bdf8 !important; color: #020617 !important; width: 100%; height: 3.2em; }
+    /* Background: Lightest Pale Yellow */
+    .stApp { background-color: #fefce8; }
+    
+    /* Sidebar Styling */
+    section[data-testid="stSidebar"] { background-color: #fef3c7 !important; border-right: 1px solid #fde68a; }
+    section[data-testid="stSidebar"] label, section[data-testid="stSidebar"] .stMarkdown p { color: #1e293b !important; font-weight: bold; }
+    
+    /* Report & Metric Boxes: Navy Background with Brightest White Text */
+    .report-box, [data-testid="stMetric"] { 
+        background-color: #1e293b !important; 
+        color: #ffffff !important; 
+        padding: 30px; 
+        border-radius: 15px;
+        border: 2px solid #ffffff;
+        box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+    }
+    
+    /* Force metrics and report text to be bright white */
+    [data-testid="stMetricValue"], [data-testid="stMetricLabel"] { color: #ffffff !important; font-weight: 800; }
+    .report-box div, .report-box p, .report-box span, .report-box li { color: #ffffff !important; font-family: 'Arial', sans-serif; }
+
+    /* Button Styling: White with Dark Border */
+    .stButton>button {
+        background-color: #ffffff !important;
+        color: #1e293b !important;
+        border: 2px solid #1e293b !important;
+        border-radius: 12px;
+        font-weight: 800;
+        width: 100%;
+        height: 3.5em;
+        transition: 0.3s ease;
+    }
+    .stButton>button:hover { background-color: #1e293b !important; color: #ffffff !important; border: 2px solid #ffffff !important; }
+
+    .main-title { color: #1e293b !important; font-size: 3rem; font-weight: 900; text-align: center; margin-bottom: 0px; }
+    .tagline { color: #4b5563 !important; font-size: 1.2rem; text-align: center; margin-bottom: 30px; font-weight: 500; }
+    
+    /* Table Styling */
+    .stTable { background-color: #ffffff; border-radius: 10px; border: 1px solid #e2e8f0; }
     </style>
     """, unsafe_allow_html=True)
 
-# --- SESSION STATE (3-PAGE ARCHITECTURE) ---
+# --- SESSION STATE ---
 if 'page' not in st.session_state: st.session_state.page = 1
 if 'report' not in st.session_state: st.session_state.report = ""
 
-st.markdown('<h1 class="main-title">BizVenture</h1>', unsafe_allow_html=True)
-st.markdown('<p class="tagline">Connect to the business world</p>', unsafe_allow_html=True)
+st.markdown('<div class="main-title">BizVenture</div>', unsafe_allow_html=True)
+st.markdown('<div class="tagline">Entrepreneurship & Innovation Process</div>', unsafe_allow_html=True)
 
-# --- SIDEBAR: DISCOVERY CONSOLE ---
+# --- SIDEBAR: SETTINGS ---
 with st.sidebar:
-    st.markdown('### 🔍 Search Console')
-    lang = st.radio("Language", ["English", "हिंदी"], horizontal=True)
+    st.markdown('### 🛠 Settings')
+    # Instant re-run on change
+    lang = st.radio("Language / भाषा", ["English", "हिंदी"], key="lang_instant_update")
     st.markdown("---")
-    idea = st.text_input("Venture Idea", placeholder="e.g. EV Hub")
+    
+    idea = st.text_input("Venture Idea", placeholder="e.g. Organic Cafe")
     location = st.text_input("Location", placeholder="e.g. Bangalore")
-    target = st.text_input("Target Audience", placeholder="e.g. Students")
+    target = st.text_input("Target Audience", placeholder="e.g. Professionals")
     budget = st.number_input("Capital (₹)", min_value=10000, value=500000)
+    
     industry = st.selectbox("Industry", ["Retail", "Tech", "Manufacturing", "Food & Beverage", "Service"])
     stage = st.selectbox("Venture Stage", ["MVP/Testing", "Market Entry", "Scaling"])
     
-    if st.button("🚀 ANALYZE VENTURE"):
+    if st.button("🚀 GENERATE PLAN"):
         st.session_state.page = 1
-        with st.spinner("🤖 Consulting Strategy Data..."):
+        with st.spinner("Preparing Professional Document..."):
             prompt = f"""
-            SYSTEM: You are a professional Business Advisor. Use PERFECT SPELLING and professional grammar. 
-            Do NOT include the words 'MBA Report', 'Part 1', 'Part 2', or 'Part 3' in your response. 
-            Do not mention specific markets like Sultanpete.
-            
-            INPUT: Idea: {idea}, Location: {location}, Target: {target}, Budget: ₹{budget}, Industry: {industry}, Stage: {stage}, Language: {lang}.
-            
-            REPORT REQUIREMENTS:
-            1. Strategy: Detailed SWOT and 4Ps Marketing Mix for {target}.
-            2. Growth: Success Rate (%), ROI Timeline, and Funding Roadmap. List specific projected Profits and Expenses for Year 2 and Year 3.
-            3. Risk: A detailed 'Loss Recovery Plan' on how to regain market share if the business faces a loss. Finish with a 30-second Investor Pitch.
+            SYSTEM: Professional Business Advisor. 
+            RULES: 
+            1. Perfect spelling. 
+            2. NO symbols like *, #, or bolding markers. Use plain text headers and spacing.
+            3. No academic labels like 'MBA' or 'Sultanpete'.
+            4. Respond in {lang}.
+
+            CONTENT:
+            - Executive Strategy (SWOT and 4Ps for {target}).
+            - Growth Plan (Success Rate %, ROI Timeline, Funding).
+            - Financials (Year 2 and Year 3 Projected Profits & Expenses).
+            - Risk & Recovery (Detailed plan to regain market share after a loss).
+            - 30-second Investor Pitch.
             """
             resp = client.chat.completions.create(model="llama-3.1-8b-instant", messages=[{"role": "user", "content": prompt}])
-            st.session_state.report = resp.choices[0].message.content
+            # Logic scrub for clean output
+            st.session_state.report = resp.choices[0].message.content.replace("*", "").replace("#", "")
 
-# --- PAGE 1: STRATEGIC DISCOVERY ---
+# --- PAGE 1: STRATEGY ---
 if st.session_state.page == 1:
     if st.session_state.report:
-        st.markdown("### 📋 Step 1: Strategic Discovery")
+        st.markdown("### Step 1: Strategic Discovery")
         c1, c2, c3 = st.columns(3)
         c1.metric("Capital", f"₹{budget:,}")
         c2.metric("Industry", industry)
         c3.metric("Stage", stage)
         
-        # Display first half of the clean text
+        # Displaying first half
         content = st.session_state.report
-        halfway = len(content)//2
-        st.markdown(f'<div class="report-box">{content[:halfway]}...</div>', unsafe_allow_html=True)
+        st.markdown(f'<div class="report-box">{content[:len(content)//2]}...</div>', unsafe_allow_html=True)
         st.button("Next: Financial Dashboard ➡️", on_click=lambda: st.session_state.update({"page": 2}))
     else:
-        st.info("Enter details in the sidebar and click 'Analyze Venture' to begin!")
+        st.info("Fill the sidebar and click 'Generate Plan'.")
 
-# --- PAGE 2: FINANCIAL DASHBOARD ---
+# --- PAGE 2: FINANCIALS ---
 elif st.session_state.page == 2:
-    st.markdown("### 💹 Step 2: Capital Allocation")
+    st.markdown("### Step 2: Capital Allocation")
+    alloc_map = {"Retail": [0.4, 0.25, 0.2, 0.15], "Tech": [0.2, 0.2, 0.5, 0.1], 
+                 "Manufacturing": [0.6, 0.2, 0.1, 0.1], "Food & Beverage": [0.45, 0.25, 0.2, 0.1], 
+                 "Service": [0.2, 0.3, 0.3, 0.2]}
+    vals = alloc_map.get(industry, [0.25, 0.25, 0.25, 0.25])
+    df = pd.DataFrame({"Category": ["Setup", "Operations", "Marketing", "Reserve"], "Amount": [budget*v for v in vals]})
     
-    allocs = [0.4, 0.25, 0.2, 0.15]
-    side_df = pd.DataFrame({"Category": ["Setup", "Ops", "Marketing", "Reserve"], "Amount": [budget*a for a in allocs]})
-    
-    # Pie Chart - Legend at bottom to prevent mobile overlap
-    fig = px.pie(side_df, values='Amount', names='Category', hole=0.5, color_discrete_sequence=px.colors.sequential.Tealgrn)
-    fig.update_layout(
-        showlegend=True, 
-        paper_bgcolor='rgba(0,0,0,0)', 
-        font=dict(color="white"),
-        legend=dict(orientation="h", yanchor="bottom", y=-0.5, xanchor="center", x=0.5),
-        margin=dict(t=10, b=100, l=10, r=10)
-    )
-    st.plotly_chart(fig, use_container_width=True)
-    
-    st.table(side_df.style.format({"Amount": "₹{:,.0f}"}))
-    st.button("Next: The Final Verdict ➡️", on_click=lambda: st.session_state.update({"page": 3}))
-    st.button("⬅️ Back to Strategy", on_click=lambda: st.session_state.update({"page": 1}))
-
-# --- PAGE 3: THE VERDICT & RISK ---
-elif st.session_state.page == 3:
-    st.markdown("### 🏆 Step 3: Performance & Risk")
-    
-    # Display the rest of the report
-    content = st.session_state.report
-    halfway = len(content)//2
-    st.markdown(f'<div class="report-box">...{content[halfway:]}</div>', unsafe_allow_html=True)
-    
-    st.markdown("---")
-    st.download_button(label="📄 Download Complete Report", data=st.session_state.report, file_name=f"BizVenture_Report.txt")
-    st.button("⬅️ Back to Financials", on_click=lambda: st.session_state.update({"page": 2}))
+    # Pie Chart with Mobile Legend Fix
