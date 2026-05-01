@@ -63,21 +63,26 @@ with st.sidebar:
     trigger = st.button("🔍 GENERATE FULL AUDIT")
 
 if trigger:
-    # Reset state for fresh generation
+    # Reset state to force fresh load on all devices
     st.session_state.page = 1
+    st.session_state.p1_mem = "" 
     st.session_state.loc_tag = u_loc
     
     with st.spinner(f"🕵️ Senior Auditor performing localized deep-dive for {u_loc}..."):
-        # INTEGRATED: Geographic Accuracy + Marker logic
+        # MANDATORY VERACITY UPDATE
         query = f"""
         ACT AS: Senior Business Auditor. 
         TASK: High-Fidelity Audit for {u_idea} in {u_loc} for {u_target} with ₹{u_budget}.
         
+        CRITICAL INSTRUCTIONS: 
+        - LOCALIZATION TRUTH: You MUST verify the population and market scale of {u_loc}. If {u_loc} is a small town like Hosanagara, do NOT list non-existent competitors (like specialized pet shops or luxury malls). If no direct competitors exist, list "Market Gap" as a strength.
+        - TIER LOGIC: Bangalore/Mumbai/Delhi/Chennai/Kolkata/Pune/Hyderabad/Ahmedabad = Tier 1. State capitals/Major cities = Tier 2. All other towns/taluks = Tier 3.
+        
         PART 1 (Strategic Analysis):
-        - Identify City Tier (CRITICAL: According to RBI/Census standards, Bangalore, Mumbai, Delhi, Chennai, Hyderabad, Kolkata, Pune, and Ahmedabad MUST be TIER 1. Verify this for {u_loc}).
+        - Identify City Tier (1, 2, or 3) for {u_loc}.
         - Professional Elevator Pitch.
         - Entrepreneurial Inspiration (STRICTLY 3 LINES).
-        - Deep Competitor Analysis for {u_loc} (Identify service gaps and weaknesses).
+        - Deep Competitor Analysis for {u_loc} (Identify specific local gaps).
         - Specific Funding Sources for ₹{u_budget}.
         - 4Ps & SWOT Analysis.
         
@@ -87,11 +92,11 @@ if trigger:
         - Logical Break-even month projection.
         
         PART 3 (Final Verdict):
-        - Success percentage: XX% (Provide detailed reasoning based on market research and competition).
-        - Go/No-Go Verdict: [Decision] (Justification subject to refinement of projections).
-        - 4-Step Loss Recovery Strategy: Financial Review, Customer Pivot, Service Adjustment, and Revenue Diversification.
+        - Success percentage: XX% (Provide detailed reasoning).
+        - Go/No-Go Verdict: [Decision].
+        - 4-Step Loss Recovery Strategy.
         
-        FORMAT: NO MARKDOWN. NO INTRO. NO PAGE NUMBERS IN TEXT.
+        FORMAT: NO MARKDOWN. NO INTRO. NO PAGE NUMBERS.
         Put markers: [S1] before Part 1, [S2] before Part 2, [S3] before Part 3.
         """
         
@@ -107,11 +112,11 @@ if trigger:
             st.session_state.p2_mem = raw_text.split("[S2]")[-1].split("[S3]")[0].strip()
             st.session_state.p3_mem = raw_text.split("[S3]")[-1].strip()
             
-            # INTEGRATED: Auto-display report after generation
-            st.rerun() 
+            # Fix for mobile/desktop sync: Force page refresh
+            st.rerun()
             
         except Exception as e:
-            st.error("Audit processing failed. Please try again.")
+            st.session_state.p1_mem = "Error: Please check your connection and try again."
 
 # --- NAVIGATION ---
 s_state = st.session_state
@@ -139,4 +144,4 @@ if s_state.p1_mem:
         st.download_button("📥 Download Full Audit Report", data=full_audit, file_name=f"Audit_Report.txt")
         st.button("⬅️ Back", on_click=lambda: st.session_state.update({"page": 2}))
 else:
-    st.markdown('<div class="report-box" style="text-align:center;">👋 Welcome. Auditor is ready to connect you to the business world.</div>', unsafe_allow_html=True)
+    st.markdown('<div class="report-box" style="text-align:center;">👋 Welcome. Auditor is ready. Localization accuracy is now enforced.</div>', unsafe_allow_html=True)
