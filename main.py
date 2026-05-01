@@ -41,7 +41,7 @@ st.markdown("""
     </style>
     """, unsafe_allow_html=True)
 
-# --- SESSION STATE ---
+# --- SESSION STATE (Independent Memory Blocks) ---
 if 'page' not in st.session_state: st.session_state.page = 1
 if 'p1_mem' not in st.session_state: st.session_state.p1_mem = ""
 if 'p2_mem' not in st.session_state: st.session_state.p2_mem = ""
@@ -63,56 +63,61 @@ with st.sidebar:
     trigger = st.button("🔍 GENERATE FULL AUDIT")
 
 if trigger:
+    # Reset state to force fresh load on all devices
     st.session_state.page = 1
     st.session_state.p1_mem = "" 
     st.session_state.loc_tag = u_loc
     
     with st.spinner(f"🕵️ Senior Auditor performing localized deep-dive for {u_loc}..."):
+        # MANDATORY VERACITY UPDATE
         query = f"""
         ACT AS: Senior Business Auditor. 
         TASK: High-Fidelity Audit for {u_idea} in {u_loc} for {u_target} with ₹{u_budget}.
         
         CRITICAL INSTRUCTIONS: 
-        - LOCALIZATION TRUTH: Verify market scale of {u_loc}. If it is a small town like Hosanagara, do NOT list non-existent specialized competitors. Use "Market Gap" if applicable.
-        - TIER LOGIC: Bangalore/Mumbai/Delhi/Chennai/Kolkata/Pune/Hyderabad/Ahmedabad = Tier 1. Others = Tier 3.
+        - LOCALIZATION TRUTH: You MUST verify the population and market scale of {u_loc}. If {u_loc} is a small town like Hosanagara, do NOT list non-existent competitors (like specialized pet shops or luxury malls). If no direct competitors exist, list "Market Gap" as a strength.
+        - TIER LOGIC: Bangalore/Mumbai/Delhi/Chennai/Kolkata/Pune/Hyderabad/Ahmedabad = Tier 1. State capitals/Major cities = Tier 2. All other towns/taluks = Tier 3.
         
         PART 1 (Strategic Analysis):
         - Identify City Tier (1, 2, or 3) for {u_loc}.
         - Professional Elevator Pitch.
         - Entrepreneurial Inspiration (STRICTLY 3 LINES).
-        - Deep Competitor Analysis for {u_loc}.
+        - Deep Competitor Analysis for {u_loc} (Identify specific local gaps).
         - Specific Funding Sources for ₹{u_budget}.
         - 4Ps & SWOT Analysis.
         
         PART 2 (Local Economics):
-        - Monthly Rent and Salary estimates for {u_loc}.
+        - Specific monthly Rent and Salary estimates for {u_loc}.
         - Unit Economics & Monthly Expense Breakdown.
         - Logical Break-even month projection.
         
         PART 3 (Final Verdict):
-        - Success percentage: XX%.
+        - Success percentage: XX% (Provide detailed reasoning).
         - Go/No-Go Verdict: [Decision].
         - 4-Step Loss Recovery Strategy.
         
-        FORMAT: NO MARKDOWN. NO INTRO. Put markers: [S1], [S2], [S3].
+        FORMAT: NO MARKDOWN. NO INTRO. NO PAGE NUMBERS.
+        Put markers: [S1] before Part 1, [S2] before Part 2, [S3] before Part 3.
         """
         
         try:
             resp = client.chat.completions.create(
                 model="llama-3.1-8b-instant", 
                 messages=[{"role": "user", "content": query}],
-                temperature=0.0  # <--- THIS LOCKS THE ANSWERS TO BE IDENTICAL
+                temperature=0.0  # <--- ONLY THIS WAS ADDED TO LOCK ANSWERS
             )
             raw_text = resp.choices[0].message.content.replace("*", "").replace("#", "")
             
+            # --- PRECISE EXTRACTION LOGIC ---
             st.session_state.p1_mem = raw_text.split("[S1]")[-1].split("[S2]")[0].strip()
             st.session_state.p2_mem = raw_text.split("[S2]")[-1].split("[S3]")[0].strip()
             st.session_state.p3_mem = raw_text.split("[S3]")[-1].strip()
             
+            # Fix for mobile/desktop sync: Force page refresh
             st.rerun()
             
         except Exception as e:
-            st.session_state.p1_mem = "Error: Please check your connection."
+            st.session_state.p1_mem = "Error: Please check your connection and try again."
 
 # --- NAVIGATION ---
 s_state = st.session_state
@@ -140,4 +145,4 @@ if s_state.p1_mem:
         st.download_button("📥 Download Full Audit Report", data=full_audit, file_name=f"Audit_Report.txt")
         st.button("⬅️ Back", on_click=lambda: st.session_state.update({"page": 2}))
 else:
-    st.markdown('<div class="report-box" style="text-align:center;">👋 Welcome. Answers are now synced across all devices.</div>', unsafe_allow_html=True)
+    st.markdown('<div class="report-box" style="text-align:center;">👋 Welcome. Auditor is ready. Localization accuracy is now enforced.</div>', unsafe_allow_html=True)
