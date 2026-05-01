@@ -41,7 +41,7 @@ st.markdown("""
     </style>
     """, unsafe_allow_html=True)
 
-# --- SESSION STATE (Independent Memory Blocks) ---
+# --- SESSION STATE ---
 if 'page' not in st.session_state: st.session_state.page = 1
 if 'p1_mem' not in st.session_state: st.session_state.p1_mem = ""
 if 'p2_mem' not in st.session_state: st.session_state.p2_mem = ""
@@ -63,61 +63,54 @@ with st.sidebar:
     trigger = st.button("🔍 GENERATE FULL AUDIT")
 
 if trigger:
-    # Reset state to force fresh load on all devices
     st.session_state.page = 1
     st.session_state.p1_mem = "" 
     st.session_state.loc_tag = u_loc
     
     with st.spinner(f"🕵️ Senior Auditor performing localized deep-dive for {u_loc}..."):
-        # MANDATORY VERACITY UPDATE
+        # RE-ENGINEERED SMART PROMPT
         query = f"""
         ACT AS: Senior Business Auditor. 
         TASK: High-Fidelity Audit for {u_idea} in {u_loc} for {u_target} with ₹{u_budget}.
         
-        CRITICAL INSTRUCTIONS: 
-        - LOCALIZATION TRUTH: You MUST verify the population and market scale of {u_loc}. If {u_loc} is a small town like Hosanagara, do NOT list non-existent competitors (like specialized pet shops or luxury malls). If no direct competitors exist, list "Market Gap" as a strength.
-        - TIER LOGIC: Bangalore/Mumbai/Delhi/Chennai/Kolkata/Pune/Hyderabad/Ahmedabad = Tier 1. State capitals/Major cities = Tier 2. All other towns/taluks = Tier 3.
+        GEOGRAPHIC INTELLIGENCE PROTOCOL:
+        1. CLASSIFY LOCATION: Determine if {u_loc} is Tier 1 (Metro), Tier 2 (City), or Tier 3 (Town/Taluk).
+        2. VERIFY MARKET REALITY: If Tier 3 (like Hosanagara), do NOT assume standard urban competition. If specialized shops do not exist there, list "Market Monopoly Potential" as a strength and "Limited Purchasing Power" as a threat.
+        3. FINANCIAL ALIGNMENT: Adjust rent and operational costs based on the Tier. A Tier 3 town should have rent 70-80% lower than Bangalore.
+        4. NO HALLUCINATION: If you cannot find a specific competitor in {u_loc}, describe the typical unorganized competition (e.g., small local vendors) instead of making up names[cite: 1].
         
         PART 1 (Strategic Analysis):
-        - Identify City Tier (1, 2, or 3) for {u_loc}.
-        - Professional Elevator Pitch.
-        - Entrepreneurial Inspiration (STRICTLY 3 LINES).
-        - Deep Competitor Analysis for {u_loc} (Identify specific local gaps).
-        - Specific Funding Sources for ₹{u_budget}.
-        - 4Ps & SWOT Analysis.
+        - Identified City Tier & Market Profile.
+        - Elevator Pitch & Inspiration.
+        - Realistic Competitor Analysis (Local gaps vs. Metro saturation).
+        - 4Ps & SWOT Analysis (Strictly localized to {u_loc}).
         
         PART 2 (Local Economics):
-        - Specific monthly Rent and Salary estimates for {u_loc}.
-        - Unit Economics & Monthly Expense Breakdown.
-        - Logical Break-even month projection.
+        - Tier-adjusted Rent/Salary/Ops breakdown.
         
         PART 3 (Final Verdict):
-        - Success percentage: XX% (Provide detailed reasoning).
-        - Go/No-Go Verdict: [Decision].
-        - 4-Step Loss Recovery Strategy.
+        - Success % based on local feasibility.
+        - Go/No-Go Decision.
         
-        FORMAT: NO MARKDOWN. NO INTRO. NO PAGE NUMBERS.
-        Put markers: [S1] before Part 1, [S2] before Part 2, [S3] before Part 3.
+        FORMAT: NO MARKDOWN. Put markers: [S1], [S2], [S3].
         """
         
         try:
             resp = client.chat.completions.create(
                 model="llama-3.1-8b-instant", 
                 messages=[{"role": "user", "content": query}],
-                temperature=0.0 # Added temperature to lock answers
+                temperature=0.0 
             )
             raw_text = resp.choices[0].message.content.replace("*", "").replace("#", "")
             
-            # --- PRECISE EXTRACTION LOGIC ---
             st.session_state.p1_mem = raw_text.split("[S1]")[-1].split("[S2]")[0].strip()
             st.session_state.p2_mem = raw_text.split("[S2]")[-1].split("[S3]")[0].strip()
             st.session_state.p3_mem = raw_text.split("[S3]")[-1].strip()
             
-            # Fix for mobile/desktop sync: Force page refresh
             st.rerun()
             
         except Exception as e:
-            st.session_state.p1_mem = "Error: Please check your connection and try again."
+            st.session_state.p1_mem = "Sync error. Please try again."
 
 # --- NAVIGATION ---
 s_state = st.session_state
@@ -140,9 +133,6 @@ if s_state.p1_mem:
     elif s_state.page == 3:
         st.markdown("## 🏆 Page 3: Professional Verdict")
         st.markdown(f'<div class="report-box">{s_state.p3_mem}</div>', unsafe_allow_html=True)
-        
-        full_audit = f"BIZVENTURE PRO AUDIT\n\nSTRATEGY:\n{s_state.p1_mem}\n\nECONOMICS:\n{s_state.p2_mem}\n\nVERDICT:\n{s_state.p3_mem}"
-        st.download_button("📥 Download Full Audit Report", data=full_audit, file_name=f"Audit_Report.txt")
         st.button("⬅️ Back", on_click=lambda: st.session_state.update({"page": 2}))
 else:
-    st.markdown('<div class="report-box" style="text-align:center;">👋 Welcome. Auditor is ready. Localization accuracy is now enforced.</div>', unsafe_allow_html=True)
+    st.markdown('<div class="report-box" style="text-align:center;">👋 Welcome. Senior Auditor is analyzing Tier-specific market data.</div>', unsafe_allow_html=True)
