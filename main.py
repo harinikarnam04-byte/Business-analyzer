@@ -104,7 +104,7 @@ if trigger:
             resp = client.chat.completions.create(
                 model="llama-3.1-8b-instant", 
                 messages=[{"role": "user", "content": query}],
-                temperature=0.0  # <--- ONLY THIS WAS ADDED TO LOCK ANSWERS
+                temperature=0.0 # Added temperature to lock answers
             )
             raw_text = resp.choices[0].message.content.replace("*", "").replace("#", "")
             
