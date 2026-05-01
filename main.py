@@ -41,7 +41,7 @@ st.markdown("""
     </style>
     """, unsafe_allow_html=True)
 
-# --- SESSION STATE ---
+# --- SESSION STATE (Independent Memory Blocks) ---
 if 'page' not in st.session_state: st.session_state.page = 1
 if 'p1_mem' not in st.session_state: st.session_state.p1_mem = ""
 if 'p2_mem' not in st.session_state: st.session_state.p2_mem = ""
@@ -57,60 +57,62 @@ with st.sidebar:
     st.markdown('### 🔍 Audit Parameters')
     u_idea = st.text_input("Venture Idea", placeholder="e.g. Organic Cafe")
     u_loc = st.text_input("Location", placeholder="e.g. Jayanagar, Bangalore")
-    u_target = st.text_input("Target Audience", placeholder="e.g. Professionals")
+    u_target = st.text_input("Target Audience", placeholder="e.g. Health-conscious professionals")
     u_budget = st.number_input("Capital (₹)", min_value=10000, value=500000)
     u_indus = st.selectbox("Industry", ["Retail", "Service", "Food", "Tech", "Manufacturing"])
     trigger = st.button("🔍 GENERATE FULL AUDIT")
 
 if trigger:
     st.session_state.page = 1
-    st.session_state.p1_mem = "" 
     st.session_state.loc_tag = u_loc
-    
     with st.spinner(f"🕵️ Senior Auditor performing localized deep-dive for {u_loc}..."):
-        # RE-ENGINEERED SMART PROMPT
+        # UPDATED PROMPT: Added Tier-Specific Economic & Competition Intelligence
         query = f"""
-        ACT AS: Senior Business Auditor. 
+        ACT AS: Senior Business Auditor specializing in Indian Market Economics. 
         TASK: High-Fidelity Audit for {u_idea} in {u_loc} for {u_target} with ₹{u_budget}.
         
-        GEOGRAPHIC INTELLIGENCE PROTOCOL:
-        1. CLASSIFY LOCATION: Determine if {u_loc} is Tier 1 (Metro), Tier 2 (City), or Tier 3 (Town/Taluk).
-        2. VERIFY MARKET REALITY: If Tier 3 (like Hosanagara), do NOT assume standard urban competition. If specialized shops do not exist there, list "Market Monopoly Potential" as a strength and "Limited Purchasing Power" as a threat.
-        3. FINANCIAL ALIGNMENT: Adjust rent and operational costs based on the Tier. A Tier 3 town should have rent 70-80% lower than Bangalore.
-        4. NO HALLUCINATION: If you cannot find a specific competitor in {u_loc}, describe the typical unorganized competition (e.g., small local vendors) instead of making up names[cite: 1].
+        INTELLIGENCE GUIDELINES:
+        1. TIER VALIDATION: Correctly identify if {u_loc} is Tier 1, 2, or 3.
+        2. SMART COMPETITION: If {u_loc} is Tier 3, do NOT list organized retail chains. Identify unorganized local vendors as the competition. If no direct competitors exist, list "First-Mover Monopoly" as a strength.
+        3. REAL COSTING: Adjust Part 2 rent and salary estimates to reflect {u_loc}'s actual tier. 
+        4. VERACITY: Do not hallucinate brand names. Use categories of competitors (e.g., "Local kirana stores," "Unorganized street vendors") if specific brands are absent.
         
         PART 1 (Strategic Analysis):
-        - Identified City Tier & Market Profile.
-        - Elevator Pitch & Inspiration.
-        - Realistic Competitor Analysis (Local gaps vs. Metro saturation).
-        - 4Ps & SWOT Analysis (Strictly localized to {u_loc}).
+        - Identified City Tier & Socio-Economic Profile of {u_loc}.
+        - Professional Elevator Pitch.
+        - Entrepreneurial Inspiration (STRICTLY 3 LINES).
+        - Deep Competitor Analysis (Localized service gaps).
+        - Specific Funding Sources for ₹{u_budget}.
+        - 4Ps & SWOT Analysis (Specific to {u_loc}'s purchasing power).
         
         PART 2 (Local Economics):
-        - Tier-adjusted Rent/Salary/Ops breakdown.
+        - Tier-adjusted monthly Rent and Salary estimates for {u_loc}.
+        - Unit Economics & Monthly Expense Breakdown.
+        - Logical Break-even month projection based on local footfall.
         
         PART 3 (Final Verdict):
-        - Success % based on local feasibility.
-        - Go/No-Go Decision.
+        - Success percentage: XX% (Justify based on the location's tier and competition density).
+        - Go/No-Go Verdict: [Decision].
+        - 4-Step Loss Recovery Strategy.
         
-        FORMAT: NO MARKDOWN. Put markers: [S1], [S2], [S3].
+        FORMAT: NO MARKDOWN. NO INTRO. NO PAGE NUMBERS IN TEXT.
+        Put markers: [S1] before Part 1, [S2] before Part 2, [S3] before Part 3.
         """
         
+        resp = client.chat.completions.create(
+            model="llama-3.1-8b-instant", 
+            messages=[{"role": "user", "content": query}],
+            temperature=0.0 # Critical for deterministic, high-logic answers
+        )
+        raw_text = resp.choices[0].message.content.replace("*", "").replace("#", "")
+        
+        # --- PRECISE EXTRACTION LOGIC ---
         try:
-            resp = client.chat.completions.create(
-                model="llama-3.1-8b-instant", 
-                messages=[{"role": "user", "content": query}],
-                temperature=0.0 
-            )
-            raw_text = resp.choices[0].message.content.replace("*", "").replace("#", "")
-            
             st.session_state.p1_mem = raw_text.split("[S1]")[-1].split("[S2]")[0].strip()
             st.session_state.p2_mem = raw_text.split("[S2]")[-1].split("[S3]")[0].strip()
             st.session_state.p3_mem = raw_text.split("[S3]")[-1].strip()
-            
-            st.rerun()
-            
-        except Exception as e:
-            st.session_state.p1_mem = "Sync error. Please try again."
+        except:
+            st.session_state.p1_mem = "Sync error. Please refine parameters and try again."
 
 # --- NAVIGATION ---
 s_state = st.session_state
@@ -133,6 +135,9 @@ if s_state.p1_mem:
     elif s_state.page == 3:
         st.markdown("## 🏆 Page 3: Professional Verdict")
         st.markdown(f'<div class="report-box">{s_state.p3_mem}</div>', unsafe_allow_html=True)
+        
+        full_audit = f"BIZVENTURE PRO AUDIT\n\nSTRATEGY:\n{s_state.p1_mem}\n\nECONOMICS:\n{s_state.p2_mem}\n\nVERDICT:\n{s_state.p3_mem}"
+        st.download_button("📥 Download Full Audit Report", data=full_audit, file_name=f"Audit_Report.txt")
         st.button("⬅️ Back", on_click=lambda: st.session_state.update({"page": 2}))
 else:
-    st.markdown('<div class="report-box" style="text-align:center;">👋 Welcome. Senior Auditor is analyzing Tier-specific market data.</div>', unsafe_allow_html=True)
+    st.markdown('<div class="report-box" style="text-align:center;">👋 Welcome. Auditor is ready to connect you to the business world.</div>', unsafe_allow_html=True)
